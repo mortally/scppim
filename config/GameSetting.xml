@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<game_settings>
+	<game>
+		<game_type>SAAHomogeneousGame</game_type>
+		<num_goods>5</num_goods>
+		<num_agents>5</num_agents>
+		<num_iterations>50</num_iterations>
+		<num_simulations>100000</num_simulations>
+		<value_upper_bound>127</value_upper_bound>
+	</game>
+	<agents>
+		<agent index='1'>SelfConfirmingOwnEffectPricePredictionNoExplorer</agent>
+		<agent index='2'>SelfConfirmingOwnEffectPricePredictionNoExplorer</agent>
+		<agent index='3'>SelfConfirmingOwnEffectPricePredictionNoExplorer</agent>
+		<agent index='4'>SelfConfirmingOwnEffectPricePredictionNoExplorer</agent>
+		<agent index='5'>SelfConfirmingOwnEffectPricePredictionNoExplorer</agent>
+	</agents>
+</game_settings>
