@@ -9,19 +9,19 @@ import java.util.BitSet;
 
 public class SelfConfirmingPricePrediction extends GameSetting implements Serializable, Strategy {
 	
-	private static final long serialVersionUID = 100L;
+	protected static final long serialVersionUID = 100L;
 
-	private int index;
+	protected int index;
 	//private int[] typeDist;
-	private Map<BitSet, Integer> typeDist;
-	private boolean isSingleUnitDemand;
+	protected Map<BitSet, Integer> typeDist;
+	protected boolean isSingleUnitDemand;
 	//private double[] pricePrediction;
-	private double[] pricePrediction;
-	private double[] prevPrediction;
-	private BitSet[] bitVector;
+	protected double[] pricePrediction;
+	protected double[] prevPrediction;
+	protected BitSet[] bitVector;
 	
-	private int[] priceObservation = new int[NUM_GOODS];
-	private int observationCount = 0;
+	protected int[] priceObservation = new int[NUM_GOODS];
+	protected int observationCount = 0;
 	
 	public SelfConfirmingPricePrediction(int index)
 	{
@@ -243,7 +243,7 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 	{
 		return this.isSingleUnitDemand;
 	}
-	private void checkSingleDemand()
+	protected void checkSingleDemand()
 	{
 		int[] singleValue = new int[NUM_GOODS];
 		for (BitSet bs : bitVector)

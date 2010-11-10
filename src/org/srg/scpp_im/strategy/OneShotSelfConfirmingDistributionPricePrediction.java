@@ -7,21 +7,21 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.BitSet;
 
-public class SelfConfirmingDistributionPricePrediction extends GameSetting implements Serializable, Strategy {
+public class OneShotSelfConfirmingDistributionPricePrediction extends GameSetting implements Serializable, Strategy {
 
 	private static final long serialVersionUID = 100L;
-	protected static final int BETA = 50;
+	private static final int BETA = 50;
 	
-	protected int index;
-	protected boolean isSingleUnitDemand;
-	protected Map<BitSet, Integer> typeDist;
-	protected int[][] pricePrediction;
-	protected int[][] prevPrediction;
-	protected int[][] priceObservation;
-	protected int observationCount;
-	protected BitSet[] bitVector;
+	private int index;
+	private boolean isSingleUnitDemand;
+	private Map<BitSet, Integer> typeDist;
+	private int[][] pricePrediction;
+	private int[][] prevPrediction;
+	private int[][] priceObservation;
+	private int observationCount;
+	private BitSet[] bitVector;
 	
-	public SelfConfirmingDistributionPricePrediction(int index)
+	public OneShotSelfConfirmingDistributionPricePrediction(int index)
 	{
 		this.index = index;
 		this.observationCount = 0;
@@ -256,7 +256,7 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 	{
 		return this.isSingleUnitDemand;
 	}
-	protected void checkSingleDemand()
+	private void checkSingleDemand()
 	{
 		int[] singleValue = new int[NUM_GOODS];
 		for (BitSet bs : bitVector)
