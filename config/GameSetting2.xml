@@ -1,18 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <game_settings>
 	<game>
-		<game_type>SecondPriceOneShotGame</game_type>
+		<game_type>SecondPriceOneShotMarketScheduling</game_type>
 		<num_goods>5</num_goods>
 		<num_agents>5</num_agents>
-		<num_iterations>10</num_iterations>
-		<num_simulations>1000000</num_simulations>
+		<num_iterations>50</num_iterations>
+		<num_simulations>500000</num_simulations>
 		<value_upper_bound>50</value_upper_bound>
+		<print_debug>false</print_debug>
+		<update_threshold>0.5</update_threshold>
 	</game>
 	<agents>
-		<agent index='1'>OneShotSelfConfirmingPricePredictionStraightMV</agent>
-		<agent index='2'>OneShotSelfConfirmingPricePredictionStraightMV</agent>
-  	    <agent index='3'>OneShotSelfConfirmingPricePredictionStraightMV</agent>
-  		<agent index='4'>OneShotSelfConfirmingPricePredictionStraightMV</agent>
-		<agent index='5'>OneShotSelfConfirmingPricePredictionStraightMV</agent>
+		<agent index='1'>OneShotSelfConfirmingPricePredictionTargetMVStar</agent>
+		<agent index='2'>OneShotSelfConfirmingPricePredictionTargetMVStar</agent>
+  	    <agent index='3'>OneShotSelfConfirmingPricePredictionTargetMVStar</agent>
+  	    <agent index='4'>OneShotSelfConfirmingPricePredictionTargetMVStar</agent>
+	 	<agent index='5'>OneShotSelfConfirmingPricePredictionTargetMVStar</agent>
 	</agents>
 </game_settings>

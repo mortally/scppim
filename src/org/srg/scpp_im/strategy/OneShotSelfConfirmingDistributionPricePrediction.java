@@ -10,7 +10,7 @@ import java.util.BitSet;
 public class OneShotSelfConfirmingDistributionPricePrediction extends GameSetting implements Serializable, Strategy {
 
 	private static final long serialVersionUID = 100L;
-	private static final int BETA = 50;
+	//private static final int BETA = 50;
 	
 	private int index;
 	private boolean isSingleUnitDemand;
@@ -26,12 +26,12 @@ public class OneShotSelfConfirmingDistributionPricePrediction extends GameSettin
 		this.index = index;
 		this.observationCount = 0;
 		this.isSingleUnitDemand = true;
-		prevPrediction = new int[NUM_GOODS][BETA+1];
-		pricePrediction = new int[NUM_GOODS][BETA+1];
-		priceObservation = new int[NUM_GOODS][BETA+1];
+		prevPrediction = new int[NUM_GOODS][VALUE_UPPER_BOUND+1];
+		pricePrediction = new int[NUM_GOODS][VALUE_UPPER_BOUND+1];
+		priceObservation = new int[NUM_GOODS][VALUE_UPPER_BOUND+1];
 		for (int i=0;i<NUM_GOODS;i++)
 		{
-			for (int j=0;j<BETA+1;j++)
+			for (int j=0;j<VALUE_UPPER_BOUND+1;j++)
 			{
 				prevPrediction[i][j] = 0;
 				pricePrediction[i][j] = 0;
@@ -97,7 +97,7 @@ public class OneShotSelfConfirmingDistributionPricePrediction extends GameSettin
 	{
 		for (int i=0;i<NUM_GOODS;i++)
 		{
-			for (int j=0;j<BETA+1;j++)
+			for (int j=0;j<VALUE_UPPER_BOUND+1;j++)
 			{
 				System.out.print(pricePrediction[i][j] + " ");
 			}
@@ -108,16 +108,28 @@ public class OneShotSelfConfirmingDistributionPricePrediction extends GameSettin
 	public void setNewPrediction()
 	{
 		//pricePrediction = priceObservation;
-		//priceObservation = new int[NUM_GOODS][BETA+1];
+		//priceObservation = new int[NUM_GOODS][VALUE_UPPER_BOUND+1];
 		for (int i=0;i<NUM_GOODS;i++)
 		{
-			for (int j=0;j<BETA+1;j++)
+			for (int j=0;j<VALUE_UPPER_BOUND+1;j++)
 			{
 				//System.out.println(pricePrediction[i][j]);
 				prevPrediction[i][j] = pricePrediction[i][j];
 				// 1 corresponds infestismal amount mentioned in the paper.
 				pricePrediction[i][j] = priceObservation[i][j] + 1;
 				priceObservation[i][j] = 0; 
+			}
+		}
+		this.observationCount = 0;
+	}
+	
+	public void resetObservation()
+	{
+		for (int i=0;i<NUM_GOODS;i++)
+		{
+			for (int j=0;j<VALUE_UPPER_BOUND+1;j++)
+			{
+				priceObservation[i][j] = 0;
 			}
 		}
 		this.observationCount = 0;
@@ -129,7 +141,7 @@ public class OneShotSelfConfirmingDistributionPricePrediction extends GameSettin
 		{
 			double sumPrev = 0;
 			double sumCurrent = 0;
-			for (int j=0;j<BETA+1;j++)
+			for (int j=0;j<VALUE_UPPER_BOUND+1;j++)
 			{
 				sumPrev += ((double)prevPrediction[i][j]/(double)NUM_SIMULATION);
 				sumCurrent += ((double)pricePrediction[i][j]/(double)NUM_SIMULATION);
@@ -167,7 +179,7 @@ public class OneShotSelfConfirmingDistributionPricePrediction extends GameSettin
 			{
 				int denomOutbid = 0;
 				int denom = 0;
-				for (int j=currentBid[i];j<BETA+1;j++)
+				for (int j=currentBid[i];j<VALUE_UPPER_BOUND+1;j++)
 				{
 					denomOutbid += this.pricePrediction[i][j];
 					if (j >= currentBid[i]+2) denom += this.pricePrediction[i][j];
@@ -175,7 +187,7 @@ public class OneShotSelfConfirmingDistributionPricePrediction extends GameSettin
 				double probOutbid = (1.0 - (double)this.pricePrediction[i][currentBid[i]] / (double)denomOutbid);
 				
 				double sum = 0;
-				for (int j=currentBid[i]+2;j<BETA+1;j++)
+				for (int j=currentBid[i]+2;j<VALUE_UPPER_BOUND+1;j++)
 				{
 					sum += (j * (double)this.pricePrediction[i][j]/(double)denom);
 				}
@@ -186,12 +198,12 @@ public class OneShotSelfConfirmingDistributionPricePrediction extends GameSettin
 			else
 			{
 				int denom = 0;
-				for (int j=currentBid[i]+1;j<BETA+1;j++)
+				for (int j=currentBid[i]+1;j<VALUE_UPPER_BOUND+1;j++)
 				{
 					denom += this.pricePrediction[i][j];
 				}
 				double expectedPrice = 0;
-				for (int j=currentBid[i]+1;j<BETA+1;j++)
+				for (int j=currentBid[i]+1;j<VALUE_UPPER_BOUND+1;j++)
 				{
 					//expectedPrice += (int)Math.round(((double)j * (double)this.pricePrediction[i][j]/(double)denom));
 					expectedPrice += ((double)j * (double)this.pricePrediction[i][j]/(double)denom);

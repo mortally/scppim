@@ -153,6 +153,20 @@ public class SelfConfirmingOwnEffectPricePredictionNoExplorer extends GameSettin
 			this.observationCount[i] = 0;
 		}
 	}
+	public void resetObservation()
+	{
+		for (int i=0;i<NUM_GOODS;i++)
+		{
+			for (int j=0;j<NUM_GOODS;j++)
+			{
+				priceObservation[i][j] = 0;
+			}
+		}
+		for (int i=0;i<NUM_GOODS;i++)
+		{
+			this.observationCount[i] = 0;
+		}
+	}
 	public double getMaxDist()
 	{
 		double maxDist = 0;

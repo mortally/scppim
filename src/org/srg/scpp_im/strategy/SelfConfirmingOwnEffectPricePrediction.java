@@ -169,6 +169,14 @@ public class SelfConfirmingOwnEffectPricePrediction extends GameSetting implemen
 		}
 		this.observationCount++;
 	}
+	public void resetObservation()
+	{
+		for (int i=0;i<NUM_GOODS;i++)
+		{
+			priceObservation[i] = 0;
+		}
+		this.observationCount = 0;
+	}
 	
 	public int[] bid(InformationState s)
 	{

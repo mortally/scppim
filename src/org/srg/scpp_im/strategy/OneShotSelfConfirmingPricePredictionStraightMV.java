@@ -118,7 +118,7 @@ public class OneShotSelfConfirmingPricePredictionStraightMV extends SelfConfirmi
 				} // end for
 				
 				double margVal = max_free_surplus - max_unavail_surplus;
-				newBid[i] = (int)Math.round(margVal);
+				newBid[i] = (int)Math.round((margVal));// + this.pricePrediction[i])/2.0);
 			}
 		}
 		

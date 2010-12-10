@@ -87,7 +87,10 @@ public class DemandReduction extends GameSetting implements Serializable, Strate
 	{
 		return;
 	}
-	
+	public void resetObservation()
+	{
+		return;
+	}
 	public double getMaxDist()
 	{
 		return 0.0;

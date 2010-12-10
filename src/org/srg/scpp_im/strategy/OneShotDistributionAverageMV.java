@@ -6,10 +6,12 @@ import org.srg.scpp_im.game.GameSetting;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.BitSet;
+import java.util.Random;
 
-public class OneShotDistributionAverageMV extends SelfConfirmingPricePrediction {
+public class OneShotDistributionAverageMV extends SelfConfirmingDistributionPricePrediction {
 	
 	private static final long serialVersionUID = 100L;
+	private static final int NUM_SAMPLE = 500;
 	
 	public OneShotDistributionAverageMV(int index)
 	{
@@ -34,16 +36,8 @@ public class OneShotDistributionAverageMV extends SelfConfirmingPricePrediction 
 			}
 		}
 		
-		for (int i=0;i<NUM_GOODS;i++)
-		{
-			if (this.pricePrediction[i] == 0 || this.isSingleUnitDemand)
-			{
-				noPredCount++;
-			}
-		}
-		
 		// no prediction 
-		if (noPredCount == NUM_GOODS)
+		if (!this.isPricePredicting)
 		{
 			for (int i=0;i<NUM_GOODS;i++)
 			{
@@ -55,7 +49,7 @@ public class OneShotDistributionAverageMV extends SelfConfirmingPricePrediction 
 		double max_surplus = Double.MIN_VALUE;
 		BitSet maxSet = new BitSet();
 		
-		if (noPredCount == NUM_GOODS) // No price prediction - baseline case
+		if (!this.isPricePredicting) // No price prediction - baseline case
 		{
 			//if (PRINT_DEBUG) System.out.println("No PP");
 			for (BitSet bs : bitVector)
@@ -83,46 +77,66 @@ public class OneShotDistributionAverageMV extends SelfConfirmingPricePrediction 
 		{
 			for (int i=0;i<NUM_GOODS;i++)
 			{
-				double max_free_surplus = Double.MIN_VALUE;
-				double max_unavail_surplus = Double.MIN_VALUE;
-				for (BitSet bs : bitVector)
-				{
-					double free_surplus = Double.MIN_VALUE;
-					double unavail_surplus = Double.MIN_VALUE;
-					int value = typeDist.get(bs).intValue();
-					double freeCost = 0.0;
-					double unavailCost = 0.0;
-					
-					for (int j=0;j<bs.length();j++)
-					{
-						if (bs.get(j)) 
-						{
-							if (i==j) unavailCost += Double.POSITIVE_INFINITY;
-							else
-							{
-								freeCost += this.pricePrediction[j];
-								unavailCost += this.pricePrediction[j];
-							}
-						}
-					}
-					free_surplus = (double)value - freeCost;
-					unavail_surplus = (double)value - unavailCost;
-					if (free_surplus > max_free_surplus)
-					{
-						max_free_surplus = free_surplus;
-					}
-					if (unavail_surplus > max_unavail_surplus)
-					{
-						max_unavail_surplus = unavail_surplus;
-					}
-				} // end for
-				
-				double margVal = max_free_surplus - max_unavail_surplus;
-				newBid[i] = (int)Math.round(margVal);
+				newBid[i] = (int)Math.round(sampleMV(i));
 			}
 		}
-		
 		return newBid;
+	}
+	
+	private double sampleMV(int i)
+	{
+		double sumMV = 0.0;
+		Random ran = new Random();
+		for (int k=0;k<NUM_SAMPLE;k++)
+		{
+			int sample_price = 0;
+			int dist_num = 1+ ran.nextInt(NUM_SIMULATION);
+			for (int p=0;p<VALUE_UPPER_BOUND+1;p++)
+			{
+				if (dist_num <= cumulPrediction[i][p])
+				{
+					sample_price = p;
+					break;
+				}
+			}
+			double max_free_surplus = Double.MIN_VALUE;
+			double max_unavail_surplus = Double.MIN_VALUE;
+			for (BitSet bs : bitVector)
+			{
+				double free_surplus = Double.MIN_VALUE;
+				double unavail_surplus = Double.MIN_VALUE;
+				int value = typeDist.get(bs).intValue();
+				double freeCost = 0.0;
+				double unavailCost = 0.0;
+				
+				for (int j=0;j<bs.length();j++)
+				{
+					if (bs.get(j)) 
+					{
+						if (i==j) unavailCost += Double.POSITIVE_INFINITY;
+						else
+						{
+							freeCost += sample_price;
+							unavailCost += sample_price;
+						}
+					}
+				}
+				free_surplus = (double)value - freeCost;
+				unavail_surplus = (double)value - unavailCost;
+				if (free_surplus > max_free_surplus)
+				{
+					max_free_surplus = free_surplus;
+				}
+				if (unavail_surplus > max_unavail_surplus)
+				{
+					max_unavail_surplus = unavail_surplus;
+				}
+			} // end for
+			
+			double margVal = max_free_surplus - max_unavail_surplus;
+			sumMV += margVal;
+		}
+		return sumMV / (double)NUM_SAMPLE;
 	}
 
 }

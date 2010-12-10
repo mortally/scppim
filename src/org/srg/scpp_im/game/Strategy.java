@@ -12,6 +12,7 @@ public interface Strategy {
 	public int getCurrentSurplus(InformationState s);
 	public void addObservation(InformationState s);
 	public void setNewPrediction();
+	public void resetObservation();
 	public void printPrediction();
 	public double getMaxDist();
 	public boolean isSingleUnitDemand();

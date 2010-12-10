@@ -14,14 +14,14 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 	private static int NUM_GOODS = 3;
 	private static long NUM_SIMULATION = 1000000;
 	private static int VALUE_UPPER_BOUND = 50;*/
-	private ArrayList<Strategy> strategies;
+	protected ArrayList<Strategy> strategies;
 	
-	private int numAgentsReceived;
-	private double[] avgPrice;
-	private int[] pp;
-	private int distCount;
-	private int[] sumValue;
-	private BitSet[] bitVector;
+	protected int numAgentsReceived;
+	protected double[] avgPrice;
+	protected int[] pp;
+	protected int distCount;
+	protected int[] sumValue;
+	protected BitSet[] bitVector;
 	//private boolean debug;
 	
 	public SecondPriceOneShotGame()
@@ -97,7 +97,11 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 					//System.out.println(i + " th simulation running..");
 					run();
 				}
-				updatePricePrediction();
+				if (j>2 && Math.abs(maxDists[j-1]) > Math.abs(maxDists[j-2]))
+				{
+					updatePricePrediction(false);
+				}
+				else updatePricePrediction(true);
 				/*
 				for (Strategy st : strategies)
 				{
@@ -153,7 +157,7 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 		}
 	}
 	
-	private double getMaxDist()
+	protected double getMaxDist()
 	{
 		double max_dist = 0;
 		for (Strategy s : strategies)
@@ -166,15 +170,24 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 		return max_dist;
 	}
 	
-	private void updatePricePrediction()
+	protected void updatePricePrediction(boolean updateAll)
 	{
+		Random ran = new Random();
 		for (Strategy s : strategies)
 		{
-			s.setNewPrediction();
+			if (updateAll) s.setNewPrediction();
+			else
+			{
+				if (ran.nextDouble() < UPDATE_THRESHOLD)
+				{
+					s.setNewPrediction();
+				}
+				else s.resetObservation();
+			}
 		}
 	}
 	
-	private void initComplementTypeDist()
+	protected void initComplementTypeDist()
 	{
 		Random ran = new Random();
 		double compleThreshold = 0.5;
@@ -255,12 +268,18 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 		}
 	}
 	
-	private void initTest()
+	protected void initTest()
 	{
-		double[] price = {6,5,2};
+		double[] price = {7,5,3};
+		
 		int[] typeDistOne = {0,0,0,0,0,0,0,15};
 		int[] typeDistTwo = {0,8,6,8,5,8,6,8};
 		int[] typeDistThree = {0,10,8,10,6,10,8,10};
+		/*
+		int[] typeDistOne = {0,5,5,5,5,5,5,5};
+		int[] typeDistTwo = {0,0,0,0,0,0,0,12};
+		int[] typeDistThree = {0,0,0,0,0,0,0,14};
+		*/
 		Iterator<Strategy> iter = strategies.iterator();
 		
 		while(iter.hasNext())
@@ -322,9 +341,15 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 		int v_i_upper_bound = ((NUM_GOODS * (v_one-1)) < VALUE_UPPER_BOUND) ? (NUM_GOODS * (v_one-1)) : VALUE_UPPER_BOUND;
 		//System.out.println(v_one + " " + v_i_upper_bound);
 		Iterator<Strategy> iter = strategies.iterator();
+		
+		//double[] price = {3.5,0.4,0.4,0.4,0.4};
+		
 		while(iter.hasNext())
 		{
 			Strategy s = iter.next();
+			
+			//s.setPricePrediction(price);
+			
 			Map<BitSet, Integer> typeDist = new HashMap<BitSet, Integer>();
 			if (s.getIndex() == 1)
 			{
@@ -370,12 +395,12 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 				for (BitSet bs : bitVector)
 				{
 					int value = m.get(bs).intValue();
-					System.out.println(bs + " " + value + " " + bs.cardinality());
+					System.out.println(bs + " " + value + " " + bs.cardinality() + " " + bs.length());
 				}
 			}
 		}
 	}
-	private void initPricePrediction(Strategy s)
+	protected void initPricePrediction(Strategy s)
 	{
 		// initial prediction of strategies are zeros
 		/*
@@ -387,7 +412,7 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 		}
 		s.setPricePrediction(newP);*/
 	}
-	private void run()
+	protected void run()
 	{
 		//ArrayList<int[]> bids = new ArrayList<int[]>();
 		int[][] bids = new int[NUM_GOODS][NUM_AGENT];

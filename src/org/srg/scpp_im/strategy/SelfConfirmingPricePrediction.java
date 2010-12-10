@@ -160,6 +160,15 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 		this.observationCount = 0;
 	}
 	
+	public void resetObservation()
+	{
+		for (int i=0;i<NUM_GOODS;i++)
+		{
+			this.priceObservation[i] = 0;
+		}
+		this.observationCount = 0;
+	}
+	
 	public int[] bid(InformationState s)
 	{
 		int[] currentBid = s.getCurrentBidPrice();

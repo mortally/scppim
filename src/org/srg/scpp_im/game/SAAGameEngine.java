@@ -152,7 +152,6 @@ public class SAAGameEngine extends GameSetting implements Register {
 			}
 			System.exit(0);
 		}
-		
 	}
 	
 	private double getMaxDist()
