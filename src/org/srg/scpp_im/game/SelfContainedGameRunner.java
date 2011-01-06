@@ -34,6 +34,8 @@ public class SelfContainedGameRunner extends GameSetting {
 	{
 			
 		String fileName = args[0];
+		String mode = args.length > 1 ? args[1] : ""; 
+		
 		strategies = new ArrayList<Strategy>();
 		parseSimulationSpecYAML(fileName);
 		//parseGameSettingXML(fileName);
@@ -62,9 +64,26 @@ public class SelfContainedGameRunner extends GameSetting {
 		try
 		{
 			Class serverClass = Class.forName("org.srg.scpp_im.game." + game);
-	        Constructor con = serverClass.getConstructor(new Class[]{});
-	        
-	        Register r = (Register)con.newInstance();
+			Constructor con;
+			Register r;
+			if (args.length > 1)
+			{
+				//mode = args[1];
+				con = serverClass.getConstructor(int.class);
+				if (mode.equalsIgnoreCase("training"))
+				{
+					r = (Register)con.newInstance(GameSetting.TRAINING_MODE);
+				}
+				else
+				{
+					r = (Register)con.newInstance(GameSetting.PRODUCTION_MODE);
+				}
+			}
+			else
+			{
+				con = serverClass.getConstructor(int.class);
+				r = (Register)con.newInstance(GameSetting.PRODUCTION_MODE);
+			}
 	        
 	        for (Strategy s : strategies)
 	        {
@@ -103,9 +122,16 @@ public class SelfContainedGameRunner extends GameSetting {
 			GameSetting.NUM_SIMULATION = Integer.parseInt(config.get("num_simulations").toString());
 			assert GameSetting.NUM_SIMULATION > 0;
 			GameSetting.PRINT_DEBUG = Boolean.parseBoolean(config.get("print_debug").toString());
+			GameSetting.PRINT_OUTPUT = Boolean.parseBoolean(config.get("print_output").toString());
 			GameSetting.UPDATE_THRESHOLD = Double.parseDouble(config.get("update_threshold").toString());
 			GameSetting.VALUE_UPPER_BOUND = Integer.parseInt(config.get("value_upper_bound").toString());
+			assert GameSetting.VALUE_UPPER_BOUND > 0;
+			GameSetting.MIN_POINT_DIST_TO_TERMINATE = Double.parseDouble(config.get("min_point_dist_to_terminate").toString());
+			assert GameSetting.MIN_POINT_DIST_TO_TERMINATE > 0;
+			GameSetting.MIN_DISTRIBUTION_DIST_TO_TERMINATE = Double.parseDouble(config.get("min_distribution_dist_to_terminate").toString());
+			assert GameSetting.MIN_DISTRIBUTION_DIST_TO_TERMINATE > 0;
 			game = config.get("game_type").toString();
+			GameSetting.GAME_TYPE = game;
 			
 			for (int i=0;i<strNames.size();i++)
 		    {

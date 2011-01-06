@@ -16,6 +16,7 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 	private static int VALUE_UPPER_BOUND = 50;*/
 	protected ArrayList<Strategy> strategies;
 	
+	protected int mode;
 	protected int numAgentsReceived;
 	protected double[] avgPrice;
 	protected int[] pp;
@@ -50,6 +51,36 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 			bitVector[i] = bs;
 		}
 		
+	}
+	
+	public SecondPriceOneShotGame(int mode)
+	{
+		/*
+		numAgentsReceived = 0;
+		avgPrice = new double[NUM_GOODS];
+		sumValue = new int[NUM_GOODS];
+		distCount = 0;
+		pp = new int[NUM_GOODS];
+		strategies = new ArrayList<Strategy>();
+		bitVector = new BitSet[(int)Math.pow(2,NUM_GOODS)];
+
+		for (int i=0;i<Math.pow(2, NUM_GOODS);i++)
+		{
+			BitSet bs = new BitSet();
+			String bits = Integer.toBinaryString(i);
+			bits = new StringBuffer(bits).reverse().toString();
+			for (int j=0;j<bits.length();j++)
+			{
+				char bitChar = bits.charAt(j);
+				String bitStr = String.valueOf(bitChar);
+				int bit = Integer.parseInt(bitStr);
+				if (bit == 1) bs.set(j, true);
+				else bs.set(j, false);
+			}
+			bitVector[i] = bs;
+		}*/
+		super();
+		this.mode = mode;
 	}
 	
 	public void register(Strategy s)
@@ -440,7 +471,14 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 		{
 			int[] bidsForGood = new int[NUM_AGENT];
 			bidsForGood = bids[i];
-			int[] sortedBids = bidsForGood;
+			int[] sortedBids = new int[NUM_AGENT];
+			
+			for (int j=0;j<NUM_AGENT;j++)
+			{
+				sortedBids[j] = bidsForGood[j];
+			}
+			
+			Arrays.sort(sortedBids);
 			
 			if (PRINT_DEBUG) System.out.print("Bids for Item " + i + ": ");
 			for (int j=0;j<NUM_AGENT;j++)
@@ -449,14 +487,13 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 			}
 			if (PRINT_DEBUG) System.out.println();
 			
-			Arrays.sort(sortedBids);
-			
 			int count = 0;
 			int secondPrice = sortedBids[NUM_AGENT-2];
+			int topPrice = sortedBids[NUM_AGENT-1];
 			
 			for (int j=0;count != 2 && j<NUM_AGENT;j++)
 			{
-				if (bidsForGood[j] == secondPrice) 
+				if (bidsForGood[j] == topPrice) 
 				{
 					count++;
 				}
@@ -470,11 +507,11 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 			
 			for (int j=0;j<NUM_AGENT;j++)
 			{
-				if (bidsForGood[j] > secondPrice) // if no tie
+				if (bidsForGood[j] > secondPrice && bidsForGood[j] > 0) // if no tie
 					winners.add(new Integer(strategies.get(j).getIndex()));
 				if (count > 1) // there exists a tie
 				{
-					if (bidsForGood[j] == secondPrice)
+					if (bidsForGood[j] == secondPrice && bidsForGood[j] > 0)
 					{
 						winners.add(new Integer(strategies.get(j).getIndex()));
 					}
@@ -485,7 +522,7 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 				Random r = new Random();
 				winner = winners.get(r.nextInt(winners.size())).intValue();
 			}
-			else winner = winners.get(0).intValue();
+			else if (winners.size() == 1) winner = winners.get(0).intValue();
 			
 			finalWinner[i] = winner;
 			finalPrice[i] = secondPrice;
@@ -520,27 +557,29 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 		{
 			avgPrice[i] += currentBids[i];
 		}
-		/*
-		System.out.print("Final prices: ");
-		for (int i=0;i<NUM_GOODS;i++)
+		
+		if (PRINT_DEBUG)
 		{
-			System.out.print(currentBids[i] + " ");
+			System.out.print("Final prices: ");
+			for (int i=0;i<NUM_GOODS;i++)
+			{
+				System.out.print(currentBids[i] + " ");
+			}
+			System.out.println();
+			System.out.print("Agent who won the good: ");
+			for (int i=0;i<NUM_GOODS;i++)
+			{
+				System.out.print(currentWinning[i] + " ");
+			}
+			System.out.println();
+			System.out.println("Utility of each agent: ");
+			for (int i=0;i<NUM_AGENT;i++)
+			{
+				Strategy s = strategies.get(i);
+				System.out.println(s.getIndex() + ": " + s.getCurrentSurplus(state));
+			}
+			System.out.println();
 		}
-		System.out.println();
-		System.out.print("Agent who won the good: ");
-		for (int i=0;i<NUM_GOODS;i++)
-		{
-			System.out.print(currentWinning[i] + " ");
-		}
-		System.out.println();
-		System.out.println("Utility of each agent: ");
-		for (int i=0;i<NUM_AGENT;i++)
-		{
-			Strategy s = strategies.get(i);
-			System.out.println(s.getIndex() + ": " + s.getCurrentSurplus(state));
-		}
-		System.out.println();
-		*/
 		//this.numAgentsReceived = 0;
 		//strategies.clear();
 	}

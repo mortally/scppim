@@ -21,7 +21,10 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 	protected int[][] priceObservation;
 	protected int[][] cumulPrediction;
 	protected int observationCount;
+	protected int cumulatedUtility = 0;
 	protected BitSet[] bitVector;
+	
+	protected final int prediction_type = DISTRIBUTION;
 	
 	public SelfConfirmingDistributionPricePrediction(int index)
 	{
@@ -64,6 +67,17 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 	{
 		return index;
 	}
+	public String getName()
+	{
+		String stratName = this.getClass().getName();
+		int firstChar = stratName.lastIndexOf('.') + 1;
+		if (firstChar > 0) stratName = stratName.substring(firstChar);
+		return stratName;
+	}
+	public int getPredictionType()
+	{
+		return this.prediction_type;
+	}
 	public Map<BitSet, Integer> getTypeDist()
 	{
 		return typeDist;
@@ -90,6 +104,16 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		}
 	}
 	
+	public int[][] getPricePrediction()
+	{
+		return this.pricePrediction;
+	}
+	
+	public double getAverageUtility()
+	{
+		return (double)this.cumulatedUtility / (double)this.observationCount;
+	}
+	
 	public int getCurrentSurplus(InformationState s)
 	{
 		int[] currentBid = s.getCurrentBidPrice();
@@ -107,7 +131,9 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		}
 		int value;
 		value = typeDist.get(bs) != null ? typeDist.get(bs).intValue() : 0;
-		return (value - cost);
+		int utility = value - cost;
+		this.cumulatedUtility += utility;
+		return utility;
 	}
 	public void printPrediction()
 	{
@@ -204,6 +230,7 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 			this.priceObservation[i][finalPrice[i]]++;
 		}
 		this.observationCount++;
+		this.getCurrentSurplus(s);
 	}
 	
 	public int[] bid(InformationState s)

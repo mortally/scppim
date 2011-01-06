@@ -1,5 +1,7 @@
 package org.srg.scpp_im.game;
 
+import com.csvreader.*;
+import java.io.File;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -11,6 +13,12 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 	public SecondPriceOneShotMarketScheduling()
 	{
 		super();
+	}
+	
+	public SecondPriceOneShotMarketScheduling(int mode)
+	{
+		super();
+		this.mode = mode;
 	}
 	
 	public void register(Strategy s)
@@ -36,6 +44,62 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 		{
 			double[][] avgPrices = new double[NUM_ITERATION][NUM_GOODS];
 			double[] maxDists = new double[NUM_ITERATION];
+			
+			if (this.mode == GameSetting.PRODUCTION_MODE)
+			{
+				String path = ""; // some absolute path will be needed when it deployed to nyx.
+				
+				for (Strategy strat : strategies)
+				{
+					String filename = GameSetting.GAME_TYPE + "_" + strat.getName()  + "_N" + NUM_AGENT + "M" + NUM_GOODS + ".csv";
+					File f = new File(path + filename);
+					if (!f.exists())
+					{
+						System.out.println("Prediction data for strategy does not exist!");
+						System.exit(-1);
+					}
+					else
+					{
+						try
+						{
+							CsvReader cr = new CsvReader(path + filename);
+							
+							if (strat.getPredictionType() == POINT)
+							{
+								double[] pp = new double[NUM_GOODS];
+								cr.readRecord();
+								for (int i=0;i<NUM_GOODS;i++)
+								{
+									pp[i] = Double.parseDouble(cr.get(i));
+								}
+								cr.close();
+								strat.setPricePrediction(pp);
+							}
+							else if (strat.getPredictionType() == DISTRIBUTION)
+							{
+								int[][] pp = new int[NUM_GOODS][VALUE_UPPER_BOUND+1];
+								for (int i=0;i<NUM_GOODS;i++)
+								{
+									cr.readRecord();
+									for (int k=0;k<VALUE_UPPER_BOUND+1;k++)
+									{
+										pp[i][k] = Integer.parseInt(cr.get(k));
+									}
+								}
+								cr.close();
+								strat.setPricePrediction(pp);
+							}
+						}
+						catch (Exception e)
+						{
+							e.printStackTrace();
+						}
+					}
+				}
+				
+				 
+			}
+			
 			for (int j=0;j<NUM_ITERATION;j++)
 			{
 				double[] prevAvg = new double[NUM_GOODS];
@@ -45,16 +109,18 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 				}
 				//pp = prevAvg;
 				
+				/*
 				for (Strategy st : strategies)
 				{
 					st.printPrediction();
 				}
+				*/
 				
 				avgPrice = new double[NUM_GOODS];
 				for (int i=0;i<NUM_SIMULATION;i++)
 				{
-					//this.initTypeDistBayesian();
-					this.initTypeDistShuffle();
+					this.initTypeDistBayesian();
+					//this.initTypeDistShuffle();
 					/*
 					double[] pp = {14.5,17.0,10.7,8.45,4.33};
 					for (Strategy st : strategies)
@@ -66,11 +132,25 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 					//System.out.println(i + " th simulation running..");
 					run();
 				}
-				if (j>2 && Math.abs(maxDists[j-1]) >= Math.abs(maxDists[j-2]))
+				
+				//if (PRINT_OUTPUT)
 				{
-					updatePricePrediction(false);
+					System.out.println("Average Utility");
+					for (Strategy strat : strategies)
+					{
+						System.out.print(strat.getAverageUtility() + " ");
+						//strat.resetObservation();
+					}
+					System.out.println();
 				}
-				else updatePricePrediction(true);
+				if (this.mode == GameSetting.TRAINING_MODE)
+				{
+					if (j>2 && Math.abs(maxDists[j-1]) >= Math.abs(maxDists[j-2]))
+					{
+						updatePricePrediction(false);
+					}
+					else updatePricePrediction(true);
+				}
 				/*
 				for (Strategy st : strategies)
 				{
@@ -89,31 +169,93 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 					//System.out.print(avgPrice[i] + " ");
 				}*/
 				//NumberFormat f = new DecimalFormat("###.#######");
-				System.out.print("avg price after simulation: ");
+				if (PRINT_OUTPUT) System.out.print("avg price after simulation: ");
 				for (int i=0;i<NUM_GOODS;i++)
 				{
 					avgPrice[i] = avgPrice[i]/(double)NUM_SIMULATION;
-					System.out.print(avgPrice[i] + " ");
+					if (PRINT_OUTPUT) System.out.print(avgPrice[i] + " ");
 					avgPrices[j][i] = avgPrice[i];
 				}
-				System.out.println();
-				System.out.println(max_dist);
-				maxDists[j] = max_dist;
-			}
-			for (int j=0;j<NUM_ITERATION;j++)
-			{
-				for (int i=0;i<NUM_GOODS;i++)
+				if (PRINT_OUTPUT)
 				{
-					System.out.print(avgPrices[j][i] + " ");
+					System.out.println();
+					System.out.println(max_dist);
+				}
+				maxDists[j] = max_dist;
+				
+				// Write out prediction as CSV file when its distance goes below threshold.
+				if (this.mode == GameSetting.TRAINING_MODE)
+				{
+					Strategy strat = strategies.get(0); // Assuming all strategies are same, get the first strategy
+					
+					String filename = GameSetting.GAME_TYPE + "_" + strat.getName()  + "_N" + NUM_AGENT + "M" + NUM_GOODS + ".csv"; 
+					if (strat.getPredictionType() == GameSetting.POINT && Math.abs(max_dist/(double)VALUE_UPPER_BOUND) < GameSetting.MIN_POINT_DIST_TO_TERMINATE)
+					{
+						CsvWriter cw = new CsvWriter(filename);
+						
+						double[] pp = strat.<double[]>getPricePrediction();
+						try
+						{
+							for (int i=0;i<NUM_GOODS;i++)
+							{
+								cw.write(Double.toString(pp[i]));
+							}
+							cw.endRecord();
+							cw.flush();
+							cw.close();
+							System.exit(0);
+						}
+						catch(Exception e)
+						{
+							e.printStackTrace();
+						}
+					}
+					else if (strat.getPredictionType() == GameSetting.DISTRIBUTION && Math.abs(max_dist/(double)VALUE_UPPER_BOUND) < GameSetting.MIN_DISTRIBUTION_DIST_TO_TERMINATE)
+					{
+						CsvWriter cw = new CsvWriter(filename);
+						
+						int[][] pp = strat.<int[][]>getPricePrediction();
+						try
+						{
+							for (int i=0;i<NUM_GOODS;i++)
+							{
+								for (int k=0;k<VALUE_UPPER_BOUND+1;k++)
+								{
+									cw.write(Integer.toString(pp[i][k]));
+								}
+								cw.endRecord();
+							}
+							cw.endRecord();
+							cw.flush();
+							cw.close();
+							System.exit(0);
+						}
+						catch(Exception e)
+						{
+							e.printStackTrace();
+						}
+					}
+				}
+				
+			}
+			if (PRINT_OUTPUT)
+			{
+				for (int j=0;j<NUM_ITERATION;j++)
+				{
+					for (int i=0;i<NUM_GOODS;i++)
+					{
+						System.out.print(avgPrices[j][i] + " ");
+					}
+					System.out.println();
+				}
+				System.out.println();
+				for (int j=0;j<NUM_ITERATION;j++)
+				{
+					System.out.println(maxDists[j]);
 				}
 				System.out.println();
 			}
-			System.out.println();
-			for (int j=0;j<NUM_ITERATION;j++)
-			{
-				System.out.println(maxDists[j]);
-			}
-			System.out.println();
+			
 			/*
 			System.out.println("Average Valuation");
 			for (int j=0;j<NUM_GOODS;j++)
@@ -156,6 +298,13 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 				//value = NUM_GOODS + ran.nextInt(value + 1);
 				for (BitSet bs : bitVector)
 				{
+					// single-unit demand case
+					/*
+					if (bs.cardinality() >= num_slot_required[idx] && num_slot_required[idx] == 1)
+					{
+						int earliestSlot = bs.nextSetBit(0);
+						typeDist.put(bs, new Integer(valuation[earliestSlot]));
+					}*/
 					if (bs.cardinality() >= num_slot_required[idx] && bs.length() == i)
 					{
 						typeDist.put(bs, new Integer(valuation[i-num_slot_required[idx]]));

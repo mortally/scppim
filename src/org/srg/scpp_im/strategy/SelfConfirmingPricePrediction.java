@@ -1,9 +1,11 @@
 package org.srg.scpp_im.strategy;
 
+import com.csvreader.*;
 import org.srg.scpp_im.game.Strategy;
 import org.srg.scpp_im.game.InformationState;
 import org.srg.scpp_im.game.GameSetting;
 import java.io.Serializable;
+import java.io.File;
 import java.util.Map;
 import java.util.BitSet;
 
@@ -22,6 +24,8 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 	
 	protected int[] priceObservation = new int[NUM_GOODS];
 	protected int observationCount = 0;
+	protected int cumulatedUtility = 0;
+	protected final int prediction_type = POINT;
 	
 	public SelfConfirmingPricePrediction(int index)
 	{
@@ -75,6 +79,18 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 	{
 		return index;
 	}
+	public String getName()
+	{
+		String stratName = this.getClass().getName();
+		int firstChar = stratName.lastIndexOf('.') + 1;
+		if (firstChar > 0) stratName = stratName.substring(firstChar);
+		return stratName;
+	}
+	public int getPredictionType()
+	{
+		return this.prediction_type;
+	}
+	
 	public void setTypeDist(Map<BitSet, Integer> typeDist)
 	{
 		this.typeDist = typeDist;
@@ -100,6 +116,31 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 		return this.pricePrediction;
 	}
 	
+	public void readPricePrediction(String file)
+	{
+		try
+		{
+			CsvReader cr = new CsvReader(file);
+			cr.readRecord();
+			if (cr.getColumnCount() != NUM_GOODS) throw new Exception("PP data has incorrect # of goods.");
+			for (int i=0;i<NUM_GOODS;i++)
+			{
+				this.pricePrediction[i] = Double.parseDouble(cr.get(i));
+			}
+			
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+			
+	}
+	
+	public double getAverageUtility()
+	{
+		return (double)this.cumulatedUtility / (double)this.observationCount;
+	}
+	
 	public int getCurrentSurplus(InformationState s)
 	{
 		int[] currentBid = s.getCurrentBidPrice();
@@ -117,7 +158,9 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 		}
 		int value;
 		value = typeDist.get(bs) != null ? typeDist.get(bs).intValue() : 0;
-		return (value - cost);
+		int utility = value - cost;
+		//cumulatedUtility += utility;
+		return utility;
 	}
 	
 	public void addObservation(InformationState s)
@@ -129,6 +172,7 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 			priceObservation[i] += finalPrice[i];
 		}
 		this.observationCount++;
+		cumulatedUtility += this.getCurrentSurplus(s);
 	}
 	
 	public double getMaxDist()
@@ -167,6 +211,7 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 			this.priceObservation[i] = 0;
 		}
 		this.observationCount = 0;
+		this.cumulatedUtility = 0;
 	}
 	
 	public int[] bid(InformationState s)
