@@ -1,6 +1,4 @@
 ---
-- OneShotSelfConfirmingPricePredictionTargetMV
-- OneShotSelfConfirmingPricePredictionStraightMV
 - OneShotSelfConfirmingPricePredictionStraightMV
 - OneShotSelfConfirmingPricePredictionStraightMV
 - OneShotSelfConfirmingPricePredictionStraightMV
@@ -8,11 +6,11 @@
 game_type: SecondPriceOneShotMarketScheduling
 num_goods: 3
 num_agents: 3
-num_iterations: 50
-num_simulations: 500000
+num_iterations: 20
+num_simulations: 200000
 value_upper_bound: 100
 print_debug: false
-print_output: true
+print_output: false
 update_threshold: 0.5
 min_point_dist_to_terminate: 0.001
 min_distribution_dist_to_terminate: 0.01

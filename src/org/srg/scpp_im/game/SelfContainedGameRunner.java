@@ -26,6 +26,7 @@ public class SelfContainedGameRunner extends GameSetting {
 	private static Document dom;
 	private static String game;
 	private static ArrayList<Strategy> strategies;
+	private static String mode;
 	private static double[][] avgPrices;
 	private static double[] avgPrice ;
 	private static BitSet[] bitVector;
@@ -34,11 +35,17 @@ public class SelfContainedGameRunner extends GameSetting {
 	{
 			
 		String fileName = args[0];
-		String mode = args.length > 1 ? args[1] : ""; 
+		mode = args.length > 1 ? args[1] : ""; 
 		
 		strategies = new ArrayList<Strategy>();
 		parseSimulationSpecYAML(fileName);
 		//parseGameSettingXML(fileName);
+		
+		if (args.length == 3)
+		{
+			GameSetting.NUM_ITERATION = Integer.parseInt(args[2]);
+			assert GameSetting.NUM_ITERATION > 0;
+		}
 		
 		bitVector = new BitSet[(int)Math.pow(2,NUM_GOODS)];
 		avgPrices = new double[NUM_ITERATION][NUM_GOODS];
@@ -109,12 +116,6 @@ public class SelfContainedGameRunner extends GameSetting {
 			
 			GameSetting.NUM_AGENT = Integer.parseInt(config.get("num_agents").toString());
 			
-			if (GameSetting.NUM_AGENT != strNames.size())
-			{
-				System.out.println("Invalid YAML file: Number of agents mismatch");
-		    	System.exit(-1);
-			}
-			
 			GameSetting.NUM_GOODS = Integer.parseInt(config.get("num_goods").toString());
 			assert GameSetting.NUM_GOODS > 0;
 			GameSetting.NUM_ITERATION = Integer.parseInt(config.get("num_iterations").toString());
@@ -133,9 +134,17 @@ public class SelfContainedGameRunner extends GameSetting {
 			game = config.get("game_type").toString();
 			GameSetting.GAME_TYPE = game;
 			
-			for (int i=0;i<strNames.size();i++)
+			if (!mode.equalsIgnoreCase("training") && GameSetting.NUM_AGENT != strNames.size())
+			{
+				System.out.println("Invalid YAML file: Number of agents mismatch");
+		    	System.exit(-1);
+			}
+			
+			for (int i=0;i<NUM_AGENT;i++)
 		    {
-		    	String strategyName = "org.srg.scpp_im.strategy." + strNames.get(i);
+				String strategyName = "";
+				if (!mode.equalsIgnoreCase("training")) strategyName = "org.srg.scpp_im.strategy." + strNames.get(i);
+				else if (mode.equalsIgnoreCase("training")) strategyName = "org.srg.scpp_im.strategy." + strNames.get(0); // only uses the first instance for training.
 		    	System.out.println(strategyName);
 
 		    	Class agentClass = Class.forName(strategyName);
@@ -191,7 +200,7 @@ public class SelfContainedGameRunner extends GameSetting {
 	    
 	    NodeList agents = root.getElementsByTagName("agent");
 	    
-	    if (agents.getLength() != GameSetting.NUM_AGENT)
+	    if (!mode.equalsIgnoreCase("training") && agents.getLength() != GameSetting.NUM_AGENT)
 	    {
 	    	System.out.println("Incomplete XML file: Number of agents mismatch");
 	    	System.exit(-1);

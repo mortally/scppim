@@ -1,5 +1,6 @@
 package org.srg.scpp_im.game;
 
+import com.csvreader.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -7,6 +8,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.io.FileOutputStream;
+import java.io.StringWriter;
+import java.io.File;
 
 public class SecondPriceOneShotGame extends GameSetting implements Register {
 	/*
@@ -23,6 +29,8 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 	protected int distCount;
 	protected int[] sumValue;
 	protected BitSet[] bitVector;
+	protected PrintStream payoff_out;
+	protected String pp_path = "";
 	//private boolean debug;
 	
 	public SecondPriceOneShotGame()
@@ -50,7 +58,15 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 			}
 			bitVector[i] = bs;
 		}
-		
+		try
+		{
+			OutputStream os = new FileOutputStream(new File("payoff_data"));
+			payoff_out = new PrintStream(os);
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
 	}
 	
 	public SecondPriceOneShotGame(int mode)

@@ -19,6 +19,8 @@ public class OneShotSelfConfirmingDistributionPricePrediction extends GameSettin
 	private int[][] prevPrediction;
 	private int[][] priceObservation;
 	private int observationCount;
+	protected int cumulatedUtility = 0;
+	protected final int prediction_type = DISTRIBUTION;
 	private BitSet[] bitVector;
 	
 	public OneShotSelfConfirmingDistributionPricePrediction(int index)
@@ -60,6 +62,7 @@ public class OneShotSelfConfirmingDistributionPricePrediction extends GameSettin
 	{
 		return index;
 	}
+	
 	public Map<BitSet, Integer> getTypeDist()
 	{
 		return typeDist;
@@ -72,6 +75,27 @@ public class OneShotSelfConfirmingDistributionPricePrediction extends GameSettin
 	public <T>void setPricePrediction(T pp)
 	{
 		this.pricePrediction = (int[][])pp;
+	}
+	
+	public String getName()
+	{
+		String stratName = this.getClass().getName();
+		int firstChar = stratName.lastIndexOf('.') + 1;
+		if (firstChar > 0) stratName = stratName.substring(firstChar);
+		return stratName;
+	}
+	public int getPredictionType()
+	{
+		return this.prediction_type;
+	}
+	public int[][] getPricePrediction()
+	{
+		return this.pricePrediction;
+	}
+	
+	public double getAverageUtility()
+	{
+		return (double)this.cumulatedUtility / (double)this.observationCount;
 	}
 	
 	public int getCurrentSurplus(InformationState s)

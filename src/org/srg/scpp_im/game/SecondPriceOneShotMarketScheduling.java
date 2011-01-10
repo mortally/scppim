@@ -1,12 +1,15 @@
 package org.srg.scpp_im.game;
 
 import com.csvreader.*;
+import org.yaml.snakeyaml.*;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
+import java.io.StringWriter;
 
 public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 
@@ -47,12 +50,12 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 			
 			if (this.mode == GameSetting.PRODUCTION_MODE)
 			{
-				String path = ""; // some absolute path will be needed when it deployed to nyx.
+				//String path = ""; // some absolute path will be needed when it deployed to nyx.
 				
 				for (Strategy strat : strategies)
 				{
 					String filename = GameSetting.GAME_TYPE + "_" + strat.getName()  + "_N" + NUM_AGENT + "M" + NUM_GOODS + ".csv";
-					File f = new File(path + filename);
+					File f = new File(pp_path + filename);
 					if (!f.exists())
 					{
 						System.out.println("Prediction data for strategy does not exist!");
@@ -62,7 +65,7 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 					{
 						try
 						{
-							CsvReader cr = new CsvReader(path + filename);
+							CsvReader cr = new CsvReader(pp_path + filename);
 							
 							if (strat.getPredictionType() == POINT)
 							{
@@ -133,17 +136,21 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 					run();
 				}
 				
-				//if (PRINT_OUTPUT)
+				if (this.mode == GameSetting.PRODUCTION_MODE)
 				{
+					if (j == GameSetting.NUM_ITERATION - 1) writeResult(true);
+					else writeResult(false);
+					/*
 					System.out.println("Average Utility");
 					for (Strategy strat : strategies)
 					{
 						System.out.print(strat.getAverageUtility() + " ");
-						//strat.resetObservation();
+						strat.resetObservation();
 					}
 					System.out.println();
+					*/
 				}
-				if (this.mode == GameSetting.TRAINING_MODE)
+				else if (this.mode == GameSetting.TRAINING_MODE)
 				{
 					if (j>2 && Math.abs(maxDists[j-1]) >= Math.abs(maxDists[j-2]))
 					{
@@ -264,8 +271,66 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 			}
 			System.out.println();
 			*/
+			payoff_out.flush();
+			payoff_out.close();
 			System.exit(0);
 		}
+	}
+	
+	private void writeResult(boolean lastIteration)
+	{
+		Map<String, Object> payoffMap = new HashMap<String, Object>(); // Average payoff for a strategy
+		Map<String, Integer> countMap = new HashMap<String, Integer>(); // Count # of agents with same strategy
+		
+		ArrayList<String> namespace = new ArrayList<String>();
+		
+		for (Strategy s : strategies)
+		{
+			String name = s.getName();
+			double payoff = s.getAverageUtility();
+			
+			if (!namespace.contains(name))
+			{
+				namespace.add(name);
+			}
+			
+			if (payoffMap.containsKey(name))
+			{
+				double p = Double.parseDouble(payoffMap.get(name).toString());
+				int count = Integer.parseInt(countMap.get(name).toString());
+				
+				p = p + payoff;
+				count++;
+				
+				payoffMap.put(name, p);
+				countMap.put(name, count);
+			}
+			else
+			{
+				payoffMap.put(name, payoff);
+				countMap.put(name, 1);
+			}
+		}
+		
+		for (String s : namespace)
+		{
+			double p = Double.parseDouble(payoffMap.get(s).toString());
+			int count = Integer.parseInt(countMap.get(s).toString());
+			
+			p = p / (double)count;
+			
+			payoffMap.put(s, p);
+		}
+		
+		StringWriter w = new StringWriter();
+		DumperOptions options = new DumperOptions();
+		options.setExplicitStart(true);
+		options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+		if (lastIteration) options.setExplicitEnd(true);
+		else options.setExplicitEnd(false);
+		Yaml y = new Yaml(options);
+		y.dump(payoffMap, w);
+		payoff_out.print(w.toString());	
 	}
 	
 	private void initTypeDistBayesian()
