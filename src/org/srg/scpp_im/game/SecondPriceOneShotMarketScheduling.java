@@ -51,11 +51,11 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 			if (this.mode == GameSetting.PRODUCTION_MODE)
 			{
 				//String path = ""; // some absolute path will be needed when it deployed to nyx.
-				
+				String path = pp_path + GameSetting.GAME_TYPE + "/Bayesian/";
 				for (Strategy strat : strategies)
 				{
-					String filename = GameSetting.GAME_TYPE + "_" + strat.getName()  + "_N" + NUM_AGENT + "M" + NUM_GOODS + ".csv";
-					File f = new File(pp_path + filename);
+					String filename = strat.getName()  + "_N" + NUM_AGENT + "M" + NUM_GOODS + ".csv";
+					File f = new File(path + filename);
 					if (!f.exists())
 					{
 						System.out.println("Prediction data for strategy does not exist!");
@@ -194,11 +194,13 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 				if (this.mode == GameSetting.TRAINING_MODE)
 				{
 					Strategy strat = strategies.get(0); // Assuming all strategies are same, get the first strategy
-					
-					String filename = GameSetting.GAME_TYPE + "_" + strat.getName()  + "_N" + NUM_AGENT + "M" + NUM_GOODS + ".csv"; 
+					String path = pp_path + GameSetting.GAME_TYPE + "/Bayesian/";
+					String filename = strat.getName()  + "_N" + NUM_AGENT + "M" + NUM_GOODS + ".csv";
+					File fPath = new File(path);
+					if (!fPath.exists()) fPath.mkdirs();
 					if (strat.getPredictionType() == GameSetting.POINT && Math.abs(max_dist/(double)VALUE_UPPER_BOUND) < GameSetting.MIN_POINT_DIST_TO_TERMINATE)
 					{
-						CsvWriter cw = new CsvWriter(filename);
+						CsvWriter cw = new CsvWriter(path + filename);
 						
 						double[] pp = strat.<double[]>getPricePrediction();
 						try
@@ -219,7 +221,7 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 					}
 					else if (strat.getPredictionType() == GameSetting.DISTRIBUTION && Math.abs(max_dist/(double)VALUE_UPPER_BOUND) < GameSetting.MIN_DISTRIBUTION_DIST_TO_TERMINATE)
 					{
-						CsvWriter cw = new CsvWriter(filename);
+						CsvWriter cw = new CsvWriter(path + filename);
 						
 						int[][] pp = strat.<int[][]>getPricePrediction();
 						try
@@ -271,8 +273,11 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 			}
 			System.out.println();
 			*/
-			payoff_out.flush();
-			payoff_out.close();
+			if (this.mode == GameSetting.PRODUCTION_MODE)
+			{
+				payoff_out.flush();
+				payoff_out.close();
+			}
 			System.exit(0);
 		}
 	}

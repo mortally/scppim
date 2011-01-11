@@ -30,7 +30,7 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 	protected int[] sumValue;
 	protected BitSet[] bitVector;
 	protected PrintStream payoff_out;
-	protected String pp_path = "";
+	protected String pp_path = "/home/wellmangroup/many-agent-simulations/scpp_test/pp_data/";
 	//private boolean debug;
 	
 	public SecondPriceOneShotGame()
@@ -60,8 +60,11 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 		}
 		try
 		{
-			OutputStream os = new FileOutputStream(new File("payoff_data"));
-			payoff_out = new PrintStream(os);
+			if (this.mode == GameSetting.PRODUCTION_MODE)
+			{
+				OutputStream os = new FileOutputStream(new File("payoff_data"));
+				payoff_out = new PrintStream(os);
+			}
 		}
 		catch (Exception e)
 		{
