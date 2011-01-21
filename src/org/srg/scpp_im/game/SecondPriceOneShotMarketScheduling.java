@@ -3,6 +3,10 @@ package org.srg.scpp_im.game;
 import com.csvreader.*;
 import org.yaml.snakeyaml.*;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
@@ -22,6 +26,18 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 	{
 		super();
 		this.mode = mode;
+		try
+		{
+			if (this.mode == GameSetting.PRODUCTION_MODE)
+			{
+				OutputStream os = new FileOutputStream(new File(SIMUL_PATH + "/payoff_data"));
+				payoff_out = new PrintStream(os);
+			}
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
 	}
 	
 	public void register(Strategy s)
@@ -51,10 +67,10 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 			if (this.mode == GameSetting.PRODUCTION_MODE)
 			{
 				//String path = ""; // some absolute path will be needed when it deployed to nyx.
-				String path = pp_path + GameSetting.GAME_TYPE + "/Bayesian/";
+				String path = pp_path + GameSetting.GAME_TYPE + "/" + GameSetting.DIST_TYPE + "/";
 				for (Strategy strat : strategies)
 				{
-					String filename = strat.getName()  + "_N" + NUM_AGENT + "M" + NUM_GOODS + ".csv";
+					String filename = strat.getName()  + "_N" + NUM_AGENT + "M" + NUM_GOODS + "V" + VALUE_UPPER_BOUND +  ".csv";
 					File f = new File(path + filename);
 					if (!f.exists())
 					{
@@ -65,7 +81,7 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 					{
 						try
 						{
-							CsvReader cr = new CsvReader(pp_path + filename);
+							CsvReader cr = new CsvReader(path + filename);
 							
 							if (strat.getPredictionType() == POINT)
 							{
@@ -99,8 +115,6 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 						}
 					}
 				}
-				
-				 
 			}
 			
 			for (int j=0;j<NUM_ITERATION;j++)
@@ -122,8 +136,17 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 				avgPrice = new double[NUM_GOODS];
 				for (int i=0;i<NUM_SIMULATION;i++)
 				{
-					this.initTypeDistBayesian();
-					//this.initTypeDistShuffle();
+					if (GameSetting.DIST_TYPE.equalsIgnoreCase("original"))
+						this.initTypeDistOriginal(); // Distribution setting from the paper
+					else if (GameSetting.DIST_TYPE.equalsIgnoreCase("bayesian"))
+						this.initTypeDistBayesian();
+					else if (GameSetting.DIST_TYPE.equalsIgnoreCase("shuffle"))
+						this.initTypeDistShuffle();
+					else 
+					{
+						System.out.println("Invalid Distribution Option!");
+						System.exit(-1);
+					}
 					/*
 					double[] pp = {14.5,17.0,10.7,8.45,4.33};
 					for (Strategy st : strategies)
@@ -194,8 +217,8 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 				if (this.mode == GameSetting.TRAINING_MODE)
 				{
 					Strategy strat = strategies.get(0); // Assuming all strategies are same, get the first strategy
-					String path = pp_path + GameSetting.GAME_TYPE + "/Bayesian/";
-					String filename = strat.getName()  + "_N" + NUM_AGENT + "M" + NUM_GOODS + ".csv";
+					String path = pp_path + GameSetting.GAME_TYPE + "/" + GameSetting.DIST_TYPE + "/";
+					String filename = strat.getName()  + "_N" + NUM_AGENT + "M" + NUM_GOODS + "V" + VALUE_UPPER_BOUND + ".csv";
 					File fPath = new File(path);
 					if (!fPath.exists()) fPath.mkdirs();
 					if (strat.getPredictionType() == GameSetting.POINT && Math.abs(max_dist/(double)VALUE_UPPER_BOUND) < GameSetting.MIN_POINT_DIST_TO_TERMINATE)
@@ -207,7 +230,8 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 						{
 							for (int i=0;i<NUM_GOODS;i++)
 							{
-								cw.write(Double.toString(pp[i]));
+								//cw.write(Double.toString(pp[i]));
+								cw.write(Double.toString(avgPrice[i]));
 							}
 							cw.endRecord();
 							cw.flush();
@@ -219,7 +243,7 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 							e.printStackTrace();
 						}
 					}
-					else if (strat.getPredictionType() == GameSetting.DISTRIBUTION && Math.abs(max_dist/(double)VALUE_UPPER_BOUND) < GameSetting.MIN_DISTRIBUTION_DIST_TO_TERMINATE)
+					else if (strat.getPredictionType() == GameSetting.DISTRIBUTION && Math.abs(max_dist) < GameSetting.MIN_DISTRIBUTION_DIST_TO_TERMINATE)
 					{
 						CsvWriter cw = new CsvWriter(path + filename);
 						
@@ -315,6 +339,7 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 				payoffMap.put(name, payoff);
 				countMap.put(name, 1);
 			}
+			s.resetObservation();
 		}
 		
 		for (String s : namespace)
@@ -331,8 +356,9 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 		DumperOptions options = new DumperOptions();
 		options.setExplicitStart(true);
 		options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-		if (lastIteration) options.setExplicitEnd(true);
-		else options.setExplicitEnd(false);
+		//if (lastIteration) options.setExplicitEnd(true);
+		//else options.setExplicitEnd(false);
+		options.setExplicitEnd(false);
 		Yaml y = new Yaml(options);
 		y.dump(payoffMap, w);
 		payoff_out.print(w.toString());	
@@ -470,6 +496,93 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 				{
 					int value = m.get(bs).intValue();
 					System.out.println(bs + " " + value + " " + bs.cardinality() + " " + bs.length());
+				}
+			}
+		}
+	}
+	
+	private void initTypeDistOriginal()
+	{
+		Random ran = new Random();
+		// single-unit demand for agent_1
+		//System.out.println(v_one + " " + v_i_upper_bound);
+		Iterator<Strategy> iter = strategies.iterator();
+		while(iter.hasNext())
+		{
+			Strategy s = iter.next();
+			int jobLength = 1 + ran.nextInt(NUM_GOODS);
+			int[] deadlineValues = new int[NUM_GOODS];
+			for (int i=0;i<NUM_GOODS;i++)
+			{
+				deadlineValues[i] = 1 + ran.nextInt(VALUE_UPPER_BOUND);
+			}
+			// Need to ensure monotonicity
+			for (int i=jobLength-1;i<NUM_GOODS-1;i++)
+			{
+				if (deadlineValues[i] < deadlineValues[i+1])
+				{
+					boolean foundLesserVal = false;
+					for (int j=i+2;j<NUM_GOODS && !foundLesserVal;j++)
+					{
+						if (deadlineValues[j] <= deadlineValues[i])
+						{
+							deadlineValues[i+1] = deadlineValues[j];
+							foundLesserVal = true;
+						}
+					}
+					if (!foundLesserVal) deadlineValues[i+1] = 0;
+				}
+			}
+			
+			if (PRINT_DEBUG)
+			{
+				System.out.println("Deadline values for agent " + s.getIndex() + "with job length = " + jobLength);
+				for (int i=0;i<NUM_GOODS;i++)
+				{
+					System.out.print(deadlineValues[i] + " ");
+				}
+				System.out.println();
+			}
+			Map<BitSet, Integer> typeDist = new HashMap<BitSet, Integer>();
+			// Give type distribution for every possible set of goods
+			for (BitSet bs : bitVector)
+			{
+				if (bs.cardinality() < jobLength) 
+				{
+					typeDist.put(bs, new Integer(0));
+				}
+				else
+				{
+					int count = 0;
+					int deadline = 0;
+					for (int i=0;i<bs.length();i++)
+					{
+						if (bs.get(i)) count++;
+						if (count == jobLength) deadline = i;
+					}
+					typeDist.put(bs, new Integer(deadlineValues[deadline]));
+				}
+				
+			}
+			
+			s.setTypeDist(typeDist);
+		} // end while
+		
+		if (PRINT_DEBUG)
+		{
+			iter = strategies.iterator();
+			while (iter.hasNext())
+			{
+				Strategy s = iter.next();
+				System.out.println("Agent " + s.getIndex() + "'s type dist:");
+				if (s.isSingleUnitDemand()) System.out.println("Single-unit demand.");
+				else System.out.println("Non single-unit demand.");
+				Map<BitSet, Integer> m = s.getTypeDist();
+				
+				for (BitSet bs : bitVector)
+				{
+					int value = m.get(bs).intValue();
+					System.out.println(bs + " " + value + " " + bs.cardinality());
 				}
 			}
 		}

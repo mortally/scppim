@@ -5,14 +5,15 @@
 - OneShotSelfConfirmingPricePredictionStraightMV
 - OneShotSelfConfirmingPricePredictionStraightMV
 ---
-game_type: SecondPriceOneShotMarketScheduling
-num_goods: 3
-num_agents: 3
-num_iterations: 50
-num_simulations: 500000
-value_upper_bound: 100
-print_debug: false
-print_output: true
-update_threshold: 0.5
-min_point_dist_to_terminate: 0.001
-min_distribution_dist_to_terminate: 0.01
+game type: "SecondPriceOneShotMarketScheduling"
+dist type: "Original"
+num goods: 3
+num agents: 3
+num iterations: 50
+num simulations: 500000
+value upper bound: 100
+print debug: "false"
+print output: "false"
+update threshold: 0.5
+min point dist to terminate: 0.001
+min distribution dist to terminate: 0.01

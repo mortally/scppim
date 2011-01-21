@@ -25,23 +25,46 @@ public class SelfContainedGameRunner extends GameSetting {
 	
 	private static Document dom;
 	private static String game;
+	private static String stratToTrain = "";
+	private static boolean numAgentSpecified = false;
 	private static ArrayList<Strategy> strategies;
 	private static String mode;
 	private static double[][] avgPrices;
-	private static double[] avgPrice ;
+	private static double[] avgPrice;
 	private static BitSet[] bitVector;
 	
 	public static void main(String[] args)
 	{
-			
-		String fileName = args[0];
+		GameSetting.SIMUL_PATH = args[0];
 		mode = args.length > 1 ? args[1] : ""; 
 		
+		if (mode.equalsIgnoreCase("training") && args.length > 2)
+		{
+			try
+			{
+				stratToTrain = args[2];
+				numAgentSpecified = true;
+				GameSetting.NUM_AGENT = Integer.parseInt(args[3]); // This meaning that when there are more than 2 args
+				assert GameSetting.NUM_AGENT > 0;                 // User has to specified both strategy to be trained and # of agents
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
+				System.out.println("Wrong number/format of arguments");
+			}
+		}
+		
+		/*
+		if (mode.equalsIgnoreCase("training") && args.length > 3)
+		{
+			
+		}
+		*/
 		strategies = new ArrayList<Strategy>();
-		parseSimulationSpecYAML(fileName);
+		parseSimulationSpecYAML(SIMUL_PATH + "/simulation_spec.yaml");
 		//parseGameSettingXML(fileName);
 		
-		if (args.length == 3)
+		if (!mode.equalsIgnoreCase("training") && args.length > 2)
 		{
 			GameSetting.NUM_ITERATION = Integer.parseInt(args[2]);
 			assert GameSetting.NUM_ITERATION > 0;
@@ -114,25 +137,34 @@ public class SelfContainedGameRunner extends GameSetting {
 			List<String> strNames = (List<String>)spec.next();
 			LinkedHashMap config = (LinkedHashMap)spec.next();
 			
-			GameSetting.NUM_AGENT = Integer.parseInt(config.get("num_agents").toString());
+			if (!numAgentSpecified) GameSetting.NUM_AGENT = (int)Double.parseDouble(config.get("num agents").toString());
 			
-			GameSetting.NUM_GOODS = Integer.parseInt(config.get("num_goods").toString());
+			GameSetting.NUM_GOODS = (int)Double.parseDouble(config.get("num goods").toString());
 			assert GameSetting.NUM_GOODS > 0;
-			GameSetting.NUM_ITERATION = Integer.parseInt(config.get("num_iterations").toString());
+			GameSetting.NUM_ITERATION = (int)Double.parseDouble(config.get("num iterations").toString());
 			assert GameSetting.NUM_ITERATION > 0;
-			GameSetting.NUM_SIMULATION = Integer.parseInt(config.get("num_simulations").toString());
+			GameSetting.NUM_SIMULATION = (int)Double.parseDouble(config.get("num simulations").toString());
 			assert GameSetting.NUM_SIMULATION > 0;
-			GameSetting.PRINT_DEBUG = Boolean.parseBoolean(config.get("print_debug").toString());
-			GameSetting.PRINT_OUTPUT = Boolean.parseBoolean(config.get("print_output").toString());
-			GameSetting.UPDATE_THRESHOLD = Double.parseDouble(config.get("update_threshold").toString());
-			GameSetting.VALUE_UPPER_BOUND = Integer.parseInt(config.get("value_upper_bound").toString());
+			GameSetting.NUM_SAMPLE = (int)Double.parseDouble(config.get("num sample").toString());
+			assert GameSetting.NUM_SAMPLE > 0;
+			GameSetting.NUM_SCENARIO = (int)Double.parseDouble(config.get("num scenario").toString());
+			assert GameSetting.NUM_SCENARIO > 0;
+			GameSetting.NUM_CANDIDATE_BID = (int)Double.parseDouble(config.get("num candidate bid").toString());
+			assert GameSetting.NUM_CANDIDATE_BID > 0;
+			GameSetting.PRINT_DEBUG = Boolean.parseBoolean(config.get("print debug").toString());
+			GameSetting.PRINT_OUTPUT = Boolean.parseBoolean(config.get("print output").toString());
+			GameSetting.UPDATE_THRESHOLD = Double.parseDouble(config.get("update threshold").toString());
+			GameSetting.VALUE_UPPER_BOUND = (int)Double.parseDouble(config.get("value upper bound").toString());
 			assert GameSetting.VALUE_UPPER_BOUND > 0;
-			GameSetting.MIN_POINT_DIST_TO_TERMINATE = Double.parseDouble(config.get("min_point_dist_to_terminate").toString());
+			GameSetting.MIN_POINT_DIST_TO_TERMINATE = Double.parseDouble(config.get("min point dist to terminate").toString());
 			assert GameSetting.MIN_POINT_DIST_TO_TERMINATE > 0;
-			GameSetting.MIN_DISTRIBUTION_DIST_TO_TERMINATE = Double.parseDouble(config.get("min_distribution_dist_to_terminate").toString());
+			GameSetting.MIN_DISTRIBUTION_DIST_TO_TERMINATE = Double.parseDouble(config.get("min distribution dist to terminate").toString());
 			assert GameSetting.MIN_DISTRIBUTION_DIST_TO_TERMINATE > 0;
-			game = config.get("game_type").toString();
+			GameSetting.DIST_TYPE = config.get("dist type").toString();
+			game = config.get("game type").toString();
 			GameSetting.GAME_TYPE = game;
+			assert !GameSetting.GAME_TYPE.isEmpty();
+			assert !GameSetting.DIST_TYPE.isEmpty();
 			
 			if (!mode.equalsIgnoreCase("training") && GameSetting.NUM_AGENT != strNames.size())
 			{
@@ -144,7 +176,11 @@ public class SelfContainedGameRunner extends GameSetting {
 		    {
 				String strategyName = "";
 				if (!mode.equalsIgnoreCase("training")) strategyName = "org.srg.scpp_im.strategy." + strNames.get(i);
-				else if (mode.equalsIgnoreCase("training")) strategyName = "org.srg.scpp_im.strategy." + strNames.get(0); // only uses the first instance for training.
+				else if (mode.equalsIgnoreCase("training")) 
+				{
+					if (stratToTrain.isEmpty())	strategyName = "org.srg.scpp_im.strategy." + strNames.get(0); // only uses the first instance for training.
+					else strategyName = "org.srg.scpp_im.strategy." + stratToTrain;
+				}
 		    	System.out.println(strategyName);
 
 		    	Class agentClass = Class.forName(strategyName);

@@ -30,7 +30,7 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 	protected int[] sumValue;
 	protected BitSet[] bitVector;
 	protected PrintStream payoff_out;
-	protected String pp_path = "/home/wellmangroup/many-agent-simulations/scpp_test/pp_data/";
+	protected String pp_path = "pp_data/";
 	//private boolean debug;
 	
 	public SecondPriceOneShotGame()
@@ -57,18 +57,6 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 				else bs.set(j, false);
 			}
 			bitVector[i] = bs;
-		}
-		try
-		{
-			if (this.mode == GameSetting.PRODUCTION_MODE)
-			{
-				OutputStream os = new FileOutputStream(new File("payoff_data"));
-				payoff_out = new PrintStream(os);
-			}
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
 		}
 	}
 	
@@ -100,6 +88,18 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 		}*/
 		super();
 		this.mode = mode;
+		try
+		{
+			if (this.mode == GameSetting.PRODUCTION_MODE)
+			{
+				OutputStream os = new FileOutputStream(new File(SIMUL_PATH + "/payoff_data"));
+				payoff_out = new PrintStream(os);
+			}
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
 	}
 	
 	public void register(Strategy s)
@@ -228,9 +228,13 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 			if (updateAll) s.setNewPrediction();
 			else
 			{
-				if (ran.nextDouble() < UPDATE_THRESHOLD)
+				if (s.getPredictionType() == GameSetting.DISTRIBUTION)
 				{
 					s.setNewPrediction();
+				}
+				else if (s.getPredictionType() == GameSetting.POINT) // && ran.nextDouble() < UPDATE_THRESHOLD)
+				{
+					s.setNewPredictionAverage();
 				}
 				else s.resetObservation();
 			}

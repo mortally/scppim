@@ -1,23 +1,19 @@
 package org.srg.scpp_im.strategy;
 
-import org.srg.scpp_im.game.Strategy;
-import org.srg.scpp_im.game.InformationState;
-import org.srg.scpp_im.game.GameSetting;
-import java.io.Serializable;
-import java.util.Map;
 import java.util.BitSet;
 import java.util.Random;
-import java.util.Arrays;
 
-public class OSSCDP_AverageMV extends SelfConfirmingDistributionPricePrediction {
-	
+import org.srg.scpp_im.game.InformationState;
+
+public class OSSCDP_TargetMU extends SelfConfirmingDistributionPricePrediction {
+
 	private static final long serialVersionUID = 100L;
-	//private static final int NUM_SAMPLE = 200;
-	
-	public OSSCDP_AverageMV(int index)
+
+	public OSSCDP_TargetMU(int index)
 	{
 		super(index);
 	}
+	
 	
 	public int[] bid(InformationState s)
 	{
@@ -87,80 +83,38 @@ public class OSSCDP_AverageMV extends SelfConfirmingDistributionPricePrediction 
 	
 	private double[] sampleMV()
 	{
-		double[] sumMV = new double[NUM_GOODS];
+		double[] sumPrice = new double[NUM_GOODS];
+		double[] average_price = new double[NUM_GOODS];
+		double[] mv = new double[NUM_GOODS];
 		Random ran = new Random();
+		
+		// Sample K scenarios
 		for (int k=0;k<NUM_SAMPLE;k++)
 		{
-			double[] sample_price = new double[NUM_GOODS];
 			int dist_num;
-			// Sample a single scenario
+			
 			for (int i=0;i<NUM_GOODS;i++)
 			{
-				dist_num = 1+ ran.nextInt(NUM_SIMULATION + VALUE_UPPER_BOUND);
-				int pos = Arrays.binarySearch(cumulPrediction[i], dist_num);
-				if (pos >= 0) sample_price[i] = pos;
-				else
-				{
-					sample_price[i] = (pos * -1) - 1;
-				}
-				/*
+				dist_num  = 1 + ran.nextInt(NUM_SIMULATION + VALUE_UPPER_BOUND);
 				for (int p=0;p<VALUE_UPPER_BOUND+1;p++)
 				{
 					if (dist_num <= cumulPrediction[i][p])
 					{
-						sample_price[i] = p;
+						sumPrice[i] += p;
 						break;
 					}
 				}
-				*/
-			}
-			
-			// StraightMV on the single scenario
-			for (int i=0;i<NUM_GOODS;i++)
-			{
-				double max_free_surplus = Double.MIN_VALUE;
-				double max_unavail_surplus = Double.MIN_VALUE;
-				for (BitSet bs : bitVector)
-				{
-					double free_surplus = Double.MIN_VALUE;
-					double unavail_surplus = Double.MIN_VALUE;
-					int value = typeDist.get(bs).intValue();
-					double freeCost = 0.0;
-					double unavailCost = 0.0;
-					
-					for (int j=0;j<bs.length();j++)
-					{
-						if (bs.get(j)) 
-						{
-							if (i==j) unavailCost += Double.POSITIVE_INFINITY;
-							else
-							{
-								freeCost += sample_price[j];
-								unavailCost += sample_price[j];
-							}
-						}
-					}
-					free_surplus = (double)value - freeCost;
-					unavail_surplus = (double)value - unavailCost;
-					if (free_surplus > max_free_surplus)
-					{
-						max_free_surplus = free_surplus;
-					}
-					if (unavail_surplus > max_unavail_surplus)
-					{
-						max_unavail_surplus = unavail_surplus;
-					}
-				} // end for
-				
-				double margVal = max_free_surplus - max_unavail_surplus;
-				sumMV[i] += margVal / (double)NUM_SAMPLE;
 			}
 		}
-		return sumMV;
-	}
-}
-
-			/*
+		// Get the expectation over price distribution, i.e. sampled K scenarios
+		for (int i=0;i<NUM_GOODS;i++)
+		{
+			average_price[i] = sumPrice[i] / (double)NUM_SAMPLE;
+		}
+		
+		// TargetMV on the average scenario
+		for (int i=0;i<NUM_GOODS;i++)
+		{
 			double max_free_surplus = Double.MIN_VALUE;
 			double max_unavail_surplus = Double.MIN_VALUE;
 			for (BitSet bs : bitVector)
@@ -178,8 +132,8 @@ public class OSSCDP_AverageMV extends SelfConfirmingDistributionPricePrediction 
 						if (i==j) unavailCost += Double.POSITIVE_INFINITY;
 						else
 						{
-							freeCost += sample_price[j];
-							unavailCost += sample_price[j];
+							freeCost += average_price[j];
+							unavailCost += average_price[j];
 						}
 					}
 				}
@@ -196,6 +150,35 @@ public class OSSCDP_AverageMV extends SelfConfirmingDistributionPricePrediction 
 			} // end for
 			
 			double margVal = max_free_surplus - max_unavail_surplus;
-			sumMV += margVal;
+			mv[i] = margVal;
 		}
-		return sumMV / (double)NUM_SAMPLE;*/
+		
+		double max_surplus = Double.MIN_VALUE;
+		BitSet maxSet = new BitSet();
+		for (BitSet bs : bitVector)
+		{
+			int value = typeDist.get(bs).intValue();
+			double cost = 0.0;
+			for (int j=0;j<bs.length();j++)
+			{
+				if (bs.get(j)) cost += average_price[j];
+			}
+			value -= cost;
+			if (value > max_surplus)
+			{
+				maxSet = bs;
+				max_surplus = value;
+			}
+		}
+		for (int i=0;i<NUM_GOODS;i++)
+		{
+			if (max_surplus > 0 && maxSet.get(i)) 
+			{
+			}
+			else mv[i] = 0; // reset bid for item to 0 if it is not a part of optimal solution.
+		}
+		
+		return mv;
+	}
+
+}

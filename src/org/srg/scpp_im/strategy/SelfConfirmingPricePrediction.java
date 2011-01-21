@@ -204,6 +204,19 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 		this.observationCount = 0;
 	}
 	
+	public void setNewPredictionAverage()
+	{
+		for (int i=0;i<NUM_GOODS;i++)
+		{
+			//this.pricePrediction[i] = (int)Math.round((double)this.priceObservation[i]/(double)this.observationCount);
+			//double prev = prevPrediction[i];
+			this.prevPrediction[i] = this.pricePrediction[i];
+			this.pricePrediction[i] = (this.pricePrediction[i] + (double)this.priceObservation[i]/(double)this.observationCount) / 2.0;
+			this.priceObservation[i] = 0;
+		}
+		this.observationCount = 0;
+	}
+	
 	public void resetObservation()
 	{
 		for (int i=0;i<NUM_GOODS;i++)

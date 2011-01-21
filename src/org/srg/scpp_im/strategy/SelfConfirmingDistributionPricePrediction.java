@@ -183,6 +183,7 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 			}
 		}
 		this.observationCount = 0;
+		this.cumulatedUtility = 0;
 	}
 	
 	private void buildCumulativeDist()

@@ -1,24 +1,22 @@
 package org.srg.scpp_im.strategy;
 
-import org.srg.scpp_im.game.Strategy;
-import org.srg.scpp_im.game.InformationState;
-import org.srg.scpp_im.game.GameSetting;
-import java.io.Serializable;
-import java.util.Map;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Random;
-import java.util.Arrays;
 
-public class OSSCDP_AverageMV extends SelfConfirmingDistributionPricePrediction {
+import org.srg.scpp_im.game.InformationState;
+
+public class OSSCDP_BidEvaluatorSMU extends
+		SelfConfirmingDistributionPricePrediction {
 	
 	private static final long serialVersionUID = 100L;
-	//private static final int NUM_SAMPLE = 200;
 	
-	public OSSCDP_AverageMV(int index)
+	public OSSCDP_BidEvaluatorSMU(int index)
 	{
 		super(index);
 	}
 	
+
 	public int[] bid(InformationState s)
 	{
 		int[] newBid = new int[NUM_GOODS];
@@ -87,80 +85,102 @@ public class OSSCDP_AverageMV extends SelfConfirmingDistributionPricePrediction 
 	
 	private double[] sampleMV()
 	{
-		double[] sumMV = new double[NUM_GOODS];
+		double[][] scenarios = new double[NUM_SCENARIO][NUM_GOODS];
+		//double[][] candidates = new double[NUM_CANDIDATE_BID][NUM_GOODS];
+		//double[] sumPrice = new double[NUM_GOODS];
+		//double[] average_price = new double[NUM_GOODS];
+		//double[] mv = new double[NUM_GOODS];
 		Random ran = new Random();
-		for (int k=0;k<NUM_SAMPLE;k++)
+		
+		// Sample E scenarios
+		for (int e=0;e<NUM_SCENARIO;e++)
 		{
-			double[] sample_price = new double[NUM_GOODS];
 			int dist_num;
-			// Sample a single scenario
+			
 			for (int i=0;i<NUM_GOODS;i++)
 			{
 				dist_num = 1+ ran.nextInt(NUM_SIMULATION + VALUE_UPPER_BOUND);
 				int pos = Arrays.binarySearch(cumulPrediction[i], dist_num);
-				if (pos >= 0) sample_price[i] = pos;
+				if (pos >= 0) scenarios[e][i] = pos;
 				else
 				{
-					sample_price[i] = (pos * -1) - 1;
+					scenarios[e][i] = ((pos * -1) - 1);
 				}
-				/*
+			}
+		}
+		
+		// consider K candidate bids
+		double[] bestBid = new double[NUM_GOODS];
+		double bestUtil = Double.MIN_VALUE;
+		for (int k=0;k<NUM_CANDIDATE_BID;k++)
+		{
+			double[] candidateBid = straightMU();
+			//boolean[] productWon = new boolean[NUM_GOODS];
+			double totalUtil = 0.0;
+			double utility = 0.0;
+			double cost;
+			for (int e=0;e<NUM_SCENARIO;e++)
+			{
+				cost = 0.0;
+				BitSet productWon = new BitSet();
+				for (int i=0;i<NUM_GOODS;i++)
+				{
+					if (candidateBid[i] > scenarios[e][i]) 
+					{
+						productWon.set(i);
+						cost += scenarios[e][i];
+					}
+				}
+				double value = typeDist.get(productWon) != null ? typeDist.get(productWon).intValue() : 0;
+				utility = value - cost;
+				totalUtil += utility/(double)NUM_SCENARIO;
+			}
+			if (totalUtil > bestUtil)
+			{
+				bestUtil = totalUtil;
+				for (int i=0;i<NUM_GOODS;i++)
+				{
+					bestBid[i] = candidateBid[i];
+				}
+			}
+		}
+		return bestBid;
+	}
+	
+	private double[] straightMU()
+	{
+		double[] sumPrice = new double[NUM_GOODS];
+		double[] average_price = new double[NUM_GOODS];
+		double[] mv = new double[NUM_GOODS];
+		Random ran = new Random();
+		
+		// Sample K scenarios
+		for (int k=0;k<NUM_SAMPLE;k++)
+		{
+			int dist_num;
+			
+			for (int i=0;i<NUM_GOODS;i++)
+			{
+				dist_num = 1+ ran.nextInt(NUM_SIMULATION + VALUE_UPPER_BOUND);
 				for (int p=0;p<VALUE_UPPER_BOUND+1;p++)
 				{
 					if (dist_num <= cumulPrediction[i][p])
 					{
-						sample_price[i] = p;
+						sumPrice[i] += p;
 						break;
 					}
 				}
-				*/
-			}
-			
-			// StraightMV on the single scenario
-			for (int i=0;i<NUM_GOODS;i++)
-			{
-				double max_free_surplus = Double.MIN_VALUE;
-				double max_unavail_surplus = Double.MIN_VALUE;
-				for (BitSet bs : bitVector)
-				{
-					double free_surplus = Double.MIN_VALUE;
-					double unavail_surplus = Double.MIN_VALUE;
-					int value = typeDist.get(bs).intValue();
-					double freeCost = 0.0;
-					double unavailCost = 0.0;
-					
-					for (int j=0;j<bs.length();j++)
-					{
-						if (bs.get(j)) 
-						{
-							if (i==j) unavailCost += Double.POSITIVE_INFINITY;
-							else
-							{
-								freeCost += sample_price[j];
-								unavailCost += sample_price[j];
-							}
-						}
-					}
-					free_surplus = (double)value - freeCost;
-					unavail_surplus = (double)value - unavailCost;
-					if (free_surplus > max_free_surplus)
-					{
-						max_free_surplus = free_surplus;
-					}
-					if (unavail_surplus > max_unavail_surplus)
-					{
-						max_unavail_surplus = unavail_surplus;
-					}
-				} // end for
-				
-				double margVal = max_free_surplus - max_unavail_surplus;
-				sumMV[i] += margVal / (double)NUM_SAMPLE;
 			}
 		}
-		return sumMV;
-	}
-}
-
-			/*
+		// Get the expectation over price distribution, i.e. sampled K scenarios
+		for (int i=0;i<NUM_GOODS;i++)
+		{
+			average_price[i] = sumPrice[i] / (double)NUM_SAMPLE;
+		}
+		
+		// StraightMV on the average scenario
+		for (int i=0;i<NUM_GOODS;i++)
+		{
 			double max_free_surplus = Double.MIN_VALUE;
 			double max_unavail_surplus = Double.MIN_VALUE;
 			for (BitSet bs : bitVector)
@@ -178,8 +198,8 @@ public class OSSCDP_AverageMV extends SelfConfirmingDistributionPricePrediction 
 						if (i==j) unavailCost += Double.POSITIVE_INFINITY;
 						else
 						{
-							freeCost += sample_price[j];
-							unavailCost += sample_price[j];
+							freeCost += average_price[j];
+							unavailCost += average_price[j];
 						}
 					}
 				}
@@ -196,6 +216,8 @@ public class OSSCDP_AverageMV extends SelfConfirmingDistributionPricePrediction 
 			} // end for
 			
 			double margVal = max_free_surplus - max_unavail_surplus;
-			sumMV += margVal;
+			mv[i] = margVal;
 		}
-		return sumMV / (double)NUM_SAMPLE;*/
+		return mv;
+	}
+}

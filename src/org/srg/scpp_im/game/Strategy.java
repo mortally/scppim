@@ -16,6 +16,7 @@ public interface Strategy {
 	public int getPredictionType();
 	public void addObservation(InformationState s);
 	public void setNewPrediction();
+	public void setNewPredictionAverage();
 	public void resetObservation();
 	public void printPrediction();
 	public double getMaxDist();
