@@ -5,14 +5,21 @@ import java.util.BitSet;
 import java.util.Random;
 
 import org.srg.scpp_im.game.InformationState;
+import	lpsolve.*; 
 
-public class OSSCDP_StraightMU extends SelfConfirmingDistributionPricePrediction {
+public class OSSCDP_SAASMU extends SelfConfirmingDistributionPricePrediction {
 	
 	private static final long serialVersionUID = 100L;
 	
-	public OSSCDP_StraightMU(int index)
+	public OSSCDP_SAASMU(int index)
 	{
 		super(index);
+	}
+
+	// Override
+	public String getPPName()
+	{
+		return "OSSCDP_StraightMU";
 	}
 	
 	public int[] bid(InformationState s)
@@ -20,7 +27,6 @@ public class OSSCDP_StraightMU extends SelfConfirmingDistributionPricePrediction
 		int[] newBid = new int[NUM_GOODS];
 		int[] singleGoodValue = new int[NUM_GOODS];
 		int[] priceToBid = new int[NUM_GOODS];
-		int noPredCount = 0;
 		
 		for (int i=0;i<NUM_GOODS;i++)
 		{
@@ -72,24 +78,23 @@ public class OSSCDP_StraightMU extends SelfConfirmingDistributionPricePrediction
 		}
 		else
 		{
-			double[] sampleBid = sampleMV();
+			double[] sampleBid = doSAA();
 			for (int i=0;i<NUM_GOODS;i++)
 			{
 				newBid[i] = (int)Math.round(sampleBid[i]);
 			}
 		}
+		
 		return newBid;
 	}
 	
-	private double[] sampleMV()
+	private double[] doSAA()
 	{
-		double[] sumPrice = new double[NUM_GOODS];
-		double[] average_price = new double[NUM_GOODS];
-		double[] mv = new double[NUM_GOODS];
+		double[][] scenarios = new double[NUM_SCENARIO][NUM_GOODS];
 		Random ran = new Random();
 		
-		// Sample K scenarios
-		for (int k=0;k<NUM_SAMPLE;k++)
+		// Sample E scenarios
+		for (int e=0;e<NUM_SCENARIO;e++)
 		{
 			double dist_num;
 			
@@ -99,66 +104,71 @@ public class OSSCDP_StraightMU extends SelfConfirmingDistributionPricePrediction
 				int pos = Arrays.binarySearch(cumulPrediction[i], dist_num);
 				if (pos >= 0) 
 				{
-					// need to handle when there are multiple identical elements.
-					// backtrack for identical elements
 					while (cumulPrediction[pos] == cumulPrediction[pos-1])
 					{
 						pos--;
 					}
-					sumPrice[i] += pos;
+					scenarios[e][i] = pos;
 				}
 				else
 				{
-					sumPrice[i] += (pos * -1) - 1;
+					scenarios[e][i] = ((pos * -1) - 1);
 				}
 			}
 		}
-		// Get the expectation over price distribution, i.e. sampled K scenarios
-		for (int i=0;i<NUM_GOODS;i++)
-		{
-			average_price[i] = sumPrice[i] / (double)NUM_SAMPLE;
-		}
 		
-		// StraightMV on the average scenario
-		for (int i=0;i<NUM_GOODS;i++)
+		int numSets = (int)Math.pow(2, NUM_GOODS);
+		int numVar = numSets * NUM_SCENARIO;
+		double[] coeffs = new double[numVar];
+		
+		for (int e=0;e<NUM_SCENARIO;e++)
 		{
-			double max_free_surplus = Double.MIN_VALUE;
-			double max_unavail_surplus = Double.MIN_VALUE;
-			for (BitSet bs : bitVector)
+			for (int i=0;i<numSets;i++)
 			{
-				double free_surplus = Double.MIN_VALUE;
-				double unavail_surplus = Double.MIN_VALUE;
-				int value = typeDist.get(bs).intValue();
-				double freeCost = 0.0;
-				double unavailCost = 0.0;
+				BitSet bs = bitVector[i];
+				double value = (double)this.typeDist.get(bs).intValue();
+				double price = 0;
 				
-				for (int j=0;j<bs.length();j++)
+				for (int k=0;k>NUM_GOODS;k++)
 				{
-					if (bs.get(j)) 
+					if (bs.get(k))
 					{
-						if (i==j) unavailCost += Double.POSITIVE_INFINITY;
-						else
-						{
-							freeCost += average_price[j];
-							unavailCost += average_price[j];
-						}
+						price += scenarios[e][k];
 					}
 				}
-				free_surplus = (double)value - freeCost;
-				unavail_surplus = (double)value - unavailCost;
-				if (free_surplus > max_free_surplus)
-				{
-					max_free_surplus = free_surplus;
-				}
-				if (unavail_surplus > max_unavail_surplus)
-				{
-					max_unavail_surplus = unavail_surplus;
-				}
-			} // end for
-			
-			double margVal = max_free_surplus - max_unavail_surplus;
-			mv[i] = margVal;
+				coeffs[e*numSets+i] = value - price;
+			}
 		}
-		return mv;
+		
+		try
+		{
+			LpSolve solver = LpSolve.makeLp(0, numVar);
+			solver.setObjFn(coeffs);
+			solver.setMaxim();
+			
+			// all variables are binary, bid or not.
+			for (int i=0;i<numVar;i++)
+			{
+				solver.setBinary(i, true);
+			}
+			
+			for (int e=0;e<NUM_SCENARIO;e++)
+			{
+				double[] constraint = new double[numVar];
+				for (int i=e*numSets;i<(e+1)*numSets;i++)
+				{
+					constraint[i] = 1;
+				}
+				solver.addConstraint(constraint, LpSolve.LE, 1);
+			}
+			solver.solve();
+			solver.deleteLp();
+		}
+		catch (LpSolveException e)
+		{
+			e.printStackTrace();
+		}
+		double[] temp = new double[NUM_GOODS];
+		return temp;
 	}
 }

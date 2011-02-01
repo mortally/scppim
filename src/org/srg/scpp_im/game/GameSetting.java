@@ -11,6 +11,7 @@ public class GameSetting {
 	public static int NUM_SCENARIO = 100;
 	public static int NUM_CANDIDATE_BID = 1;
 	public static int VALUE_UPPER_BOUND = 127;
+	public static int HIERARCHICAL_REDUCTION_LEVEL = 2;
 	public static boolean PRINT_DEBUG = true;
 	public static boolean PRINT_OUTPUT = false;
 	public static double UPDATE_THRESHOLD = 0.5;

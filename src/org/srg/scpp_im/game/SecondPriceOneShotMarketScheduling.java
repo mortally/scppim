@@ -42,7 +42,8 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 	
 	public void register(Strategy s)
 	{
-		if (numAgentsReceived == NUM_AGENT) return;
+		if (this.mode == GameSetting.TRAINING_MODE && numAgentsReceived == NUM_AGENT) return;
+		if (this.mode == GameSetting.PRODUCTION_MODE && numAgentsReceived == NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL) return;
 		// get Strategy object here
 		
 		// temporary setting of initial dist
@@ -59,7 +60,8 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
         System.out.println();
         */
 		numAgentsReceived++;
-		if (numAgentsReceived == NUM_AGENT) 
+		if ((this.mode == GameSetting.TRAINING_MODE && numAgentsReceived == NUM_AGENT) ||
+			(this.mode == GameSetting.PRODUCTION_MODE && numAgentsReceived == NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL)) 
 		{
 			double[][] avgPrices = new double[NUM_ITERATION][NUM_GOODS];
 			double[] maxDists = new double[NUM_ITERATION];
@@ -70,7 +72,7 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 				String path = pp_path + GameSetting.GAME_TYPE + "/" + GameSetting.DIST_TYPE + "/";
 				for (Strategy strat : strategies)
 				{
-					String filename = strat.getName()  + "_N" + NUM_AGENT + "M" + NUM_GOODS + "V" + VALUE_UPPER_BOUND +  ".csv";
+					String filename = strat.getPPName()  + "_N" + (NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL) + "M" + NUM_GOODS + "V" + VALUE_UPPER_BOUND +  ".csv";
 					File f = new File(path + filename);
 					if (!f.exists())
 					{
@@ -96,13 +98,14 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 							}
 							else if (strat.getPredictionType() == DISTRIBUTION)
 							{
-								int[][] pp = new int[NUM_GOODS][VALUE_UPPER_BOUND+1];
+								double[][] pp = new double[NUM_GOODS][VALUE_UPPER_BOUND+1];
 								for (int i=0;i<NUM_GOODS;i++)
 								{
 									cr.readRecord();
 									for (int k=0;k<VALUE_UPPER_BOUND+1;k++)
 									{
-										pp[i][k] = Integer.parseInt(cr.get(k));
+										pp[i][k] = Double.parseDouble(cr.get(k));
+										//System.out.println("!!!!!!!!!: " + pp[i][k]);
 									}
 								}
 								cr.close();
@@ -126,12 +129,12 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 				}
 				//pp = prevAvg;
 				
-				/*
+				
 				for (Strategy st : strategies)
 				{
 					st.printPrediction();
 				}
-				*/
+				
 				
 				avgPrice = new double[NUM_GOODS];
 				for (int i=0;i<NUM_SIMULATION;i++)
@@ -175,11 +178,11 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 				}
 				else if (this.mode == GameSetting.TRAINING_MODE)
 				{
-					if (j>2 && Math.abs(maxDists[j-1]) >= Math.abs(maxDists[j-2]))
+					if (j>2 && Math.abs(maxDists[j-1]) > Math.abs(maxDists[j-2]))
 					{
-						updatePricePrediction(false);
+						updatePricePrediction(false, j);
 					}
-					else updatePricePrediction(true);
+					else updatePricePrediction(true, j);
 				}
 				/*
 				for (Strategy st : strategies)
@@ -230,8 +233,8 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 						{
 							for (int i=0;i<NUM_GOODS;i++)
 							{
-								//cw.write(Double.toString(pp[i]));
-								cw.write(Double.toString(avgPrice[i]));
+								cw.write(Double.toString(pp[i]));
+								//cw.write(Double.toString(avgPrice[i]));
 							}
 							cw.endRecord();
 							cw.flush();
@@ -247,14 +250,14 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 					{
 						CsvWriter cw = new CsvWriter(path + filename);
 						
-						int[][] pp = strat.<int[][]>getPricePrediction();
+						double[][] pp = strat.<double[][]>getPricePrediction();
 						try
 						{
 							for (int i=0;i<NUM_GOODS;i++)
 							{
 								for (int k=0;k<VALUE_UPPER_BOUND+1;k++)
 								{
-									cw.write(Integer.toString(pp[i][k]));
+									cw.write(Double.toString(pp[i][k]));
 								}
 								cw.endRecord();
 							}
@@ -514,7 +517,7 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 			int[] deadlineValues = new int[NUM_GOODS];
 			for (int i=0;i<NUM_GOODS;i++)
 			{
-				deadlineValues[i] = 1 + ran.nextInt(VALUE_UPPER_BOUND);
+				deadlineValues[i] = i < jobLength - 1 ? 0 : 1 + ran.nextInt(VALUE_UPPER_BOUND);
 			}
 			// Need to ensure monotonicity
 			for (int i=jobLength-1;i<NUM_GOODS-1;i++)
@@ -536,7 +539,7 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 			
 			if (PRINT_DEBUG)
 			{
-				System.out.println("Deadline values for agent " + s.getIndex() + "with job length = " + jobLength);
+				System.out.println("Deadline values for agent " + s.getIndex() + " with job length = " + jobLength);
 				for (int i=0;i<NUM_GOODS;i++)
 				{
 					System.out.print(deadlineValues[i] + " ");

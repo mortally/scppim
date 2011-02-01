@@ -156,6 +156,8 @@ public class SelfContainedGameRunner extends GameSetting {
 			GameSetting.UPDATE_THRESHOLD = Double.parseDouble(config.get("update threshold").toString());
 			GameSetting.VALUE_UPPER_BOUND = (int)Double.parseDouble(config.get("value upper bound").toString());
 			assert GameSetting.VALUE_UPPER_BOUND > 0;
+			GameSetting.HIERARCHICAL_REDUCTION_LEVEL = (int)Double.parseDouble(config.get("hierarchical reduction level").toString());
+			assert GameSetting.HIERARCHICAL_REDUCTION_LEVEL > 0;
 			GameSetting.MIN_POINT_DIST_TO_TERMINATE = Double.parseDouble(config.get("min point dist to terminate").toString());
 			assert GameSetting.MIN_POINT_DIST_TO_TERMINATE > 0;
 			GameSetting.MIN_DISTRIBUTION_DIST_TO_TERMINATE = Double.parseDouble(config.get("min distribution dist to terminate").toString());
@@ -178,6 +180,7 @@ public class SelfContainedGameRunner extends GameSetting {
 				if (!mode.equalsIgnoreCase("training")) strategyName = "org.srg.scpp_im.strategy." + strNames.get(i);
 				else if (mode.equalsIgnoreCase("training")) 
 				{
+					GameSetting.HIERARCHICAL_REDUCTION_LEVEL = 1;
 					if (stratToTrain.isEmpty())	strategyName = "org.srg.scpp_im.strategy." + strNames.get(0); // only uses the first instance for training.
 					else strategyName = "org.srg.scpp_im.strategy." + stratToTrain;
 				}
@@ -185,8 +188,19 @@ public class SelfContainedGameRunner extends GameSetting {
 
 		    	Class agentClass = Class.forName(strategyName);
 		    	Constructor con = agentClass.getConstructor(int.class);
-		        Strategy s = (Strategy)con.newInstance(i+1);
-		        strategies.add(s);
+		    	if (mode.equalsIgnoreCase("training"))
+		    	{
+		    		Strategy s = (Strategy)con.newInstance(i+1);
+		    		strategies.add(s);
+		    	}
+		    	else 
+		    	{
+		    		for (int j=0;j<HIERARCHICAL_REDUCTION_LEVEL;j++)
+		    		{
+		    			Strategy s = (Strategy)con.newInstance(i * HIERARCHICAL_REDUCTION_LEVEL + j + 1);
+		    			strategies.add(s);
+		    		}
+		    	}
 		    }
 		}
 		catch (Exception e)

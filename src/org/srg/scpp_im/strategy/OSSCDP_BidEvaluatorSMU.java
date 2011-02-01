@@ -15,14 +15,19 @@ public class OSSCDP_BidEvaluatorSMU extends
 	{
 		super(index);
 	}
-	
+
+	// Override
+	public String getPPName()
+	{
+		return "OSSCDP_StraightMU";
+	}
 
 	public int[] bid(InformationState s)
 	{
 		int[] newBid = new int[NUM_GOODS];
 		int[] singleGoodValue = new int[NUM_GOODS];
 		int[] priceToBid = new int[NUM_GOODS];
-		int noPredCount = 0;
+		//int noPredCount = 0;
 		
 		for (int i=0;i<NUM_GOODS;i++)
 		{
@@ -95,13 +100,20 @@ public class OSSCDP_BidEvaluatorSMU extends
 		// Sample E scenarios
 		for (int e=0;e<NUM_SCENARIO;e++)
 		{
-			int dist_num;
+			double dist_num;
 			
 			for (int i=0;i<NUM_GOODS;i++)
 			{
-				dist_num = 1+ ran.nextInt(NUM_SIMULATION + VALUE_UPPER_BOUND);
+				dist_num = cumulPrediction[i][VALUE_UPPER_BOUND] * ran.nextDouble();
 				int pos = Arrays.binarySearch(cumulPrediction[i], dist_num);
-				if (pos >= 0) scenarios[e][i] = pos;
+				if (pos >= 0) 
+				{
+					while (cumulPrediction[pos] == cumulPrediction[pos-1])
+					{
+						pos--;
+					}
+					scenarios[e][i] = pos;
+				}
 				else
 				{
 					scenarios[e][i] = ((pos * -1) - 1);
@@ -115,6 +127,15 @@ public class OSSCDP_BidEvaluatorSMU extends
 		for (int k=0;k<NUM_CANDIDATE_BID;k++)
 		{
 			double[] candidateBid = straightMU();
+			if (PRINT_DEBUG)
+			{
+				System.out.println("Agent " + this.getIndex() + "'s candidate bids");
+				for (int i=0;i<NUM_GOODS;i++)
+				{
+					System.out.print(candidateBid[i] + " ");
+				}
+				System.out.println();
+			}
 			//boolean[] productWon = new boolean[NUM_GOODS];
 			double totalUtil = 0.0;
 			double utility = 0.0;
@@ -144,6 +165,15 @@ public class OSSCDP_BidEvaluatorSMU extends
 				}
 			}
 		}
+		if (PRINT_DEBUG)
+		{
+			System.out.println("Agent " + this.getIndex() + "'s best bid with utility = " + bestUtil + ":");
+			for (int i=0;i<NUM_GOODS;i++)
+			{
+				System.out.print(bestBid[i] + " ");
+			}
+			System.out.println();
+		}
 		return bestBid;
 	}
 	
@@ -157,18 +187,25 @@ public class OSSCDP_BidEvaluatorSMU extends
 		// Sample K scenarios
 		for (int k=0;k<NUM_SAMPLE;k++)
 		{
-			int dist_num;
+			double dist_num;
 			
 			for (int i=0;i<NUM_GOODS;i++)
 			{
-				dist_num = 1+ ran.nextInt(NUM_SIMULATION + VALUE_UPPER_BOUND);
-				for (int p=0;p<VALUE_UPPER_BOUND+1;p++)
+				dist_num = cumulPrediction[i][VALUE_UPPER_BOUND] * ran.nextDouble();
+				int pos = Arrays.binarySearch(cumulPrediction[i], dist_num);
+				if (pos >= 0) 
 				{
-					if (dist_num <= cumulPrediction[i][p])
+					// need to handle when there are multiple identical elements.
+					// backtrack for identical elements
+					while (cumulPrediction[pos] == cumulPrediction[pos-1])
 					{
-						sumPrice[i] += p;
-						break;
+						pos--;
 					}
+					sumPrice[i] += pos;
+				}
+				else
+				{
+					sumPrice[i] += (pos * -1) - 1;
 				}
 			}
 		}

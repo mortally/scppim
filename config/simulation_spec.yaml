@@ -1,20 +1,21 @@
 ---
-- OSSCDP_AverageMV
-- OSSCDP_AverageMV
-- OSSCPP_TargetPrice
-- OSSCPP_TargetPrice
+- OSSCPP_TargetMV
+- OSSCPP_TargetMV
+- OSSCPP_TargetMV
+- OSSCDP_SAASMU
 ---
 game type: "SecondPriceOneShotMarketScheduling"
 dist type: "Original"
 num goods: 5
 num agents: 4
-num iterations: 50
-num simulations: 1000000
-num sample: 200
-num scenario: 100
-num candidate bid: 1
+num iterations: 1
+num simulations: 1
+num sample: 8
+num scenario: 32
+num candidate bid: 4
+hierarchical reduction level: 2
 value upper bound: 50
-print debug: "false"
+print debug: "true"
 print output: "true"
 update threshold: 0.5
 min point dist to terminate: 0.001

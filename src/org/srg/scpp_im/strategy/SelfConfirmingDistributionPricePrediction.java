@@ -16,10 +16,10 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 	protected boolean isSingleUnitDemand;
 	protected boolean isPricePredicting = false;
 	protected Map<BitSet, Integer> typeDist;
-	protected int[][] pricePrediction;
-	protected int[][] prevPrediction;
-	protected int[][] priceObservation;
-	protected int[][] cumulPrediction;
+	protected double[][] pricePrediction;
+	protected double[][] prevPrediction;
+	protected double[][] priceObservation;
+	protected double[][] cumulPrediction;
 	protected int observationCount;
 	protected int cumulatedUtility = 0;
 	protected BitSet[] bitVector;
@@ -31,10 +31,10 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		this.index = index;
 		this.observationCount = 0;
 		this.isSingleUnitDemand = true;
-		prevPrediction = new int[NUM_GOODS][VALUE_UPPER_BOUND+1];
-		pricePrediction = new int[NUM_GOODS][VALUE_UPPER_BOUND+1];
-		priceObservation = new int[NUM_GOODS][VALUE_UPPER_BOUND+1];
-		cumulPrediction = new int[NUM_GOODS][VALUE_UPPER_BOUND+1];
+		prevPrediction = new double[NUM_GOODS][VALUE_UPPER_BOUND+1];
+		pricePrediction = new double[NUM_GOODS][VALUE_UPPER_BOUND+1];
+		priceObservation = new double[NUM_GOODS][VALUE_UPPER_BOUND+1];
+		cumulPrediction = new double[NUM_GOODS][VALUE_UPPER_BOUND+1];
 		for (int i=0;i<NUM_GOODS;i++)
 		{
 			for (int j=0;j<BETA+1;j++)
@@ -74,6 +74,10 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		if (firstChar > 0) stratName = stratName.substring(firstChar);
 		return stratName;
 	}
+	public String getPPName()
+	{
+		return this.getName();
+	}
 	public int getPredictionType()
 	{
 		return this.prediction_type;
@@ -89,7 +93,14 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 	}
 	public <T>void setPricePrediction(T pp)
 	{
-		this.pricePrediction = (int[][])pp;
+		double[][] newPP = (double[][])pp;
+		for (int i=0;i<NUM_GOODS;i++)
+		{
+			for (int j=0;j<VALUE_UPPER_BOUND;j++)
+			{
+				this.pricePrediction[i][j] = newPP[i][j];
+			}
+		}
 		for (int i=0;i<NUM_GOODS;i++)
 		{
 			for (int j=0;j<VALUE_UPPER_BOUND;j++)
@@ -104,7 +115,7 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		}
 	}
 	
-	public int[][] getPricePrediction()
+	public double[][] getPricePrediction()
 	{
 		return this.pricePrediction;
 	}
@@ -158,8 +169,8 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 				cumulPrediction[i][j] = 0;
 				//System.out.println(pricePrediction[i][j]);
 				prevPrediction[i][j] = pricePrediction[i][j];
-				// 1 corresponds infestismal amount mentioned in the paper.
-				pricePrediction[i][j] = priceObservation[i][j] + 1;
+				// 0.1 corresponds infestismal amount mentioned in the paper.
+				pricePrediction[i][j] = priceObservation[i][j] + 0.1;
 				cumulPrediction[i][j] += pricePrediction[i][j];
 				if (j>0)
 				{
@@ -171,6 +182,32 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		this.observationCount = 0;
 		this.isPricePredicting = true;
 		//buildCumulativeDist();
+	}
+	
+	public void setNewPredictionAverage(int currentIt)
+	{
+		for (int i=0;i<NUM_GOODS;i++)
+		{
+			for (int j=0;j<VALUE_UPPER_BOUND+1;j++)
+			{
+				cumulPrediction[i][j] = 0;
+				//System.out.println(pricePrediction[i][j]);
+				prevPrediction[i][j] = pricePrediction[i][j];
+				double diff = priceObservation[i][j] - pricePrediction[i][j];
+				diff = diff * (GameSetting.NUM_ITERATION - currentIt) * 2 / (GameSetting.NUM_ITERATION * 2);
+				pricePrediction[i][j] = pricePrediction[i][j] + diff;
+				// 0.1 corresponds infestismal amount mentioned in the paper.
+				// pricePrediction[i][j] = priceObservation[i][j] + 0.1;
+				cumulPrediction[i][j] += pricePrediction[i][j];
+				if (j>0)
+				{
+					cumulPrediction[i][j] += cumulPrediction[i][j-1];
+				}
+				priceObservation[i][j] = 0; 
+			}
+		}
+		this.observationCount = 0;
+		this.isPricePredicting = true;
 	}
 	
 	public void resetObservation()
@@ -190,7 +227,7 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 	{
 		for (int i=0;i<NUM_GOODS;i++)
 		{
-			for (int j=0;j<VALUE_UPPER_BOUND;j++)
+			for (int j=0;j<VALUE_UPPER_BOUND+1;j++)
 			{
 				cumulPrediction[i][j] = 0;
 				cumulPrediction[i][j] += pricePrediction[i][j];

@@ -83,7 +83,7 @@ public class OSSCPP_TargetMVStar extends SelfConfirmingPricePrediction {
 		{
 			for (BitSet bs : bitVector)
 			{
-				int value = typeDist.get(bs).intValue();
+				double value = (double)typeDist.get(bs).intValue();
 				double cost = 0.0;
 				for (int j=0;j<bs.length();j++)
 				{

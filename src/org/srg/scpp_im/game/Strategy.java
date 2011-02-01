@@ -8,6 +8,7 @@ public interface Strategy {
 	public int[] bid(InformationState state);
 	public int getIndex();
 	public String getName();
+	public String getPPName();
 	public Map<BitSet, Integer> getTypeDist();
 	public void setTypeDist(Map<BitSet, Integer> typeDist);
 	public <T>void setPricePrediction(T pp);
@@ -16,7 +17,7 @@ public interface Strategy {
 	public int getPredictionType();
 	public void addObservation(InformationState s);
 	public void setNewPrediction();
-	public void setNewPredictionAverage();
+	public void setNewPredictionAverage(int currentIt);
 	public void resetObservation();
 	public void printPrediction();
 	public double getMaxDist();

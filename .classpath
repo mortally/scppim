@@ -4,5 +4,10 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/snakeyaml-1.7.jar"/>
 	<classpathentry kind="lib" path="lib/javacsv.jar"/>
+	<classpathentry kind="lib" path="lib/lpsolve55j.jar">
+		<attributes>
+			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="SCPP_IM/lib"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

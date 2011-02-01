@@ -92,13 +92,22 @@ public class OSSCDP_AverageMV extends SelfConfirmingDistributionPricePrediction 
 		for (int k=0;k<NUM_SAMPLE;k++)
 		{
 			double[] sample_price = new double[NUM_GOODS];
-			int dist_num;
+			double dist_num;
 			// Sample a single scenario
 			for (int i=0;i<NUM_GOODS;i++)
 			{
-				dist_num = 1+ ran.nextInt(NUM_SIMULATION + VALUE_UPPER_BOUND);
+				dist_num = cumulPrediction[i][VALUE_UPPER_BOUND] * ran.nextDouble();
 				int pos = Arrays.binarySearch(cumulPrediction[i], dist_num);
-				if (pos >= 0) sample_price[i] = pos;
+				if (pos >= 0) 
+				{
+					// need to handle when there are multiple identical elements.
+					// backtrack for identical elements
+					while (cumulPrediction[pos] == cumulPrediction[pos-1])
+					{
+						pos--;
+					}
+					sample_price[i] = pos;
+				}
 				else
 				{
 					sample_price[i] = (pos * -1) - 1;

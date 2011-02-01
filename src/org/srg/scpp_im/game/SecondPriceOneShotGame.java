@@ -149,9 +149,9 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 				}
 				if (j>2 && Math.abs(maxDists[j-1]) > Math.abs(maxDists[j-2]))
 				{
-					updatePricePrediction(false);
+					updatePricePrediction(false, j);
 				}
-				else updatePricePrediction(true);
+				else updatePricePrediction(true, j);
 				/*
 				for (Strategy st : strategies)
 				{
@@ -220,24 +220,30 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 		return max_dist;
 	}
 	
-	protected void updatePricePrediction(boolean updateAll)
+	protected void updatePricePrediction(boolean updateAll, int currentIt)
 	{
-		Random ran = new Random();
+		//Random ran = new Random();
 		for (Strategy s : strategies)
 		{
-			if (updateAll) s.setNewPrediction();
-			else
-			{
+			s.setNewPredictionAverage(currentIt);
+			//if (updateAll) s.setNewPrediction();
+			//else
+			//{
+			//	s.setNewPredictionAverage(currentIt);
+				/*
 				if (s.getPredictionType() == GameSetting.DISTRIBUTION)
 				{
-					s.setNewPrediction();
+					if (!updateAll && ran.nextDouble() < UPDATE_THRESHOLD) s.setNewPrediction();
+					else if(updateAll) s.setNewPrediction();
+					else s.resetObservation();
 				}
-				else if (s.getPredictionType() == GameSetting.POINT) // && ran.nextDouble() < UPDATE_THRESHOLD)
+				else if (s.getPredictionType() == GameSetting.POINT)//  && ran.nextDouble() < UPDATE_THRESHOLD)
 				{
-					s.setNewPredictionAverage();
+					s.setNewPredictionAverage(currentIt);
 				}
 				else s.resetObservation();
-			}
+				*/
+			//}
 		}
 	}
 	
@@ -469,14 +475,14 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 	protected void run()
 	{
 		//ArrayList<int[]> bids = new ArrayList<int[]>();
-		int[][] bids = new int[NUM_GOODS][NUM_AGENT];
+		int[][] bids = new int[NUM_GOODS][NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL];
 		int[] finalPrice = new int[NUM_GOODS];
 		int[] finalWinner = new int[NUM_GOODS];
 		// testing a single SAA
 
 		InformationState state = new InformationState(NUM_GOODS);
 
-		for (int i=0;i<NUM_AGENT;i++)
+		for (int i=0;i<NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;i++)
 		{
 			Strategy s = strategies.get(i);
 			int[] newbid = s.bid(state);
@@ -492,11 +498,11 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 		
 		for (int i=0;i<NUM_GOODS;i++)
 		{
-			int[] bidsForGood = new int[NUM_AGENT];
+			int[] bidsForGood = new int[NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL];
 			bidsForGood = bids[i];
-			int[] sortedBids = new int[NUM_AGENT];
+			int[] sortedBids = new int[NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL];
 			
-			for (int j=0;j<NUM_AGENT;j++)
+			for (int j=0;j<NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;j++)
 			{
 				sortedBids[j] = bidsForGood[j];
 			}
@@ -504,17 +510,17 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 			Arrays.sort(sortedBids);
 			
 			if (PRINT_DEBUG) System.out.print("Bids for Item " + i + ": ");
-			for (int j=0;j<NUM_AGENT;j++)
+			for (int j=0;j<NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;j++)
 			{
 				if (PRINT_DEBUG) System.out.print(bidsForGood[j] + " ");
 			}
 			if (PRINT_DEBUG) System.out.println();
 			
 			int count = 0;
-			int secondPrice = sortedBids[NUM_AGENT-2];
-			int topPrice = sortedBids[NUM_AGENT-1];
+			int secondPrice = sortedBids[NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL-2];
+			int topPrice = sortedBids[NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL-1];
 			
-			for (int j=0;count != 2 && j<NUM_AGENT;j++)
+			for (int j=0;count != 2 && j<NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;j++)
 			{
 				if (bidsForGood[j] == topPrice) 
 				{
@@ -528,7 +534,7 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 			ArrayList<Integer> winners = new ArrayList<Integer>();
 			int winner = 0;
 			
-			for (int j=0;j<NUM_AGENT;j++)
+			for (int j=0;j<NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;j++)
 			{
 				if (bidsForGood[j] > secondPrice && bidsForGood[j] > 0) // if no tie
 					winners.add(new Integer(strategies.get(j).getIndex()));
@@ -596,7 +602,7 @@ public class SecondPriceOneShotGame extends GameSetting implements Register {
 			}
 			System.out.println();
 			System.out.println("Utility of each agent: ");
-			for (int i=0;i<NUM_AGENT;i++)
+			for (int i=0;i<NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;i++)
 			{
 				Strategy s = strategies.get(i);
 				System.out.println(s.getIndex() + ": " + s.getCurrentSurplus(state));

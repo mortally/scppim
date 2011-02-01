@@ -1,5 +1,6 @@
 package org.srg.scpp_im.strategy;
 
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Random;
 
@@ -92,18 +93,25 @@ public class OSSCDP_TargetMUStar extends
 		// Sample K scenarios
 		for (int k=0;k<NUM_SAMPLE;k++)
 		{
-			int dist_num;
+			double dist_num;
 			
 			for (int i=0;i<NUM_GOODS;i++)
 			{
-				dist_num  = 1 + ran.nextInt(NUM_SIMULATION + VALUE_UPPER_BOUND);
-				for (int p=0;p<VALUE_UPPER_BOUND+1;p++)
+				dist_num = cumulPrediction[i][VALUE_UPPER_BOUND] * ran.nextDouble();
+				int pos = Arrays.binarySearch(cumulPrediction[i], dist_num);
+				if (pos >= 0) 
 				{
-					if (dist_num <= cumulPrediction[i][p])
+					// need to handle when there are multiple identical elements.
+					// backtrack for identical elements
+					while (cumulPrediction[pos] == cumulPrediction[pos-1])
 					{
-						sumPrice[i] += p;
-						break;
+						pos--;
 					}
+					sumPrice[i] += pos;
+				}
+				else
+				{
+					sumPrice[i] += (pos * -1) - 1;
 				}
 			}
 		}
@@ -116,7 +124,7 @@ public class OSSCDP_TargetMUStar extends
 		BitSet maxSet = new BitSet();
 		for (BitSet bs : bitVector)
 		{
-			int value = typeDist.get(bs).intValue();
+			double value = (double)typeDist.get(bs).intValue();
 			double cost = 0.0;
 			for (int j=0;j<bs.length();j++)
 			{

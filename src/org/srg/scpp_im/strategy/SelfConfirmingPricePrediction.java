@@ -86,6 +86,12 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 		if (firstChar > 0) stratName = stratName.substring(firstChar);
 		return stratName;
 	}
+	
+	public String getPPName()
+	{
+		return this.getName();
+	}
+	
 	public int getPredictionType()
 	{
 		return this.prediction_type;
@@ -103,8 +109,14 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 	}
 	public void printPrediction()
 	{
-		
+		System.out.print("Agent " + index + "'s PP: ");
+		for (int i=0;i<NUM_GOODS;i++)
+		{
+			System.out.print(this.pricePrediction[i] + " ");
+		}
+		System.out.println();
 	}
+	
 	public <T>void setPricePrediction(T pp)
 	{
 		this.prevPrediction = this.pricePrediction;
@@ -204,14 +216,17 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 		this.observationCount = 0;
 	}
 	
-	public void setNewPredictionAverage()
+	public void setNewPredictionAverage(int currentIt)
 	{
 		for (int i=0;i<NUM_GOODS;i++)
 		{
 			//this.pricePrediction[i] = (int)Math.round((double)this.priceObservation[i]/(double)this.observationCount);
 			//double prev = prevPrediction[i];
 			this.prevPrediction[i] = this.pricePrediction[i];
-			this.pricePrediction[i] = (this.pricePrediction[i] + (double)this.priceObservation[i]/(double)this.observationCount) / 2.0;
+			double diff = ((double)this.priceObservation[i]/(double)this.observationCount) - this.pricePrediction[i];
+			diff = diff * (GameSetting.NUM_ITERATION - currentIt) * 2 / (GameSetting.NUM_ITERATION * 2); // decreases by 1/NUM_ITERATION each time
+			this.pricePrediction[i] = this.pricePrediction[i] + diff;
+			//this.pricePrediction[i] = (this.pricePrediction[i] + (double)this.priceObservation[i]/(double)this.observationCount) / 2.0;
 			this.priceObservation[i] = 0;
 		}
 		this.observationCount = 0;

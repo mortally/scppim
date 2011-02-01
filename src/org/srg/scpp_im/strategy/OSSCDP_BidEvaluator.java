@@ -16,6 +16,11 @@ public class OSSCDP_BidEvaluator extends
 		super(index);
 	}
 	
+	// Override
+	public String getPPName()
+	{
+		return "OSSCDP_TargetMU";
+	}
 
 	public int[] bid(InformationState s)
 	{
@@ -95,18 +100,27 @@ public class OSSCDP_BidEvaluator extends
 		// Sample E scenarios
 		for (int e=0;e<NUM_SCENARIO;e++)
 		{
-			int dist_num;
-			
+			double dist_num;
+			if (PRINT_DEBUG) System.out.print("Scenario " + e + " for agent " + this.getIndex() + ": ");
 			for (int i=0;i<NUM_GOODS;i++)
 			{
-				dist_num = 1+ ran.nextInt(NUM_SIMULATION + VALUE_UPPER_BOUND);
+				dist_num = cumulPrediction[i][VALUE_UPPER_BOUND] * ran.nextDouble();
 				int pos = Arrays.binarySearch(cumulPrediction[i], dist_num);
-				if (pos >= 0) scenarios[e][i] = pos;
+				if (pos >= 0) 
+				{
+					while (cumulPrediction[pos] == cumulPrediction[pos-1])
+					{
+						pos--;
+					}
+					scenarios[e][i] = pos;
+				}
 				else
 				{
 					scenarios[e][i] = ((pos * -1) - 1);
 				}
+				if (PRINT_DEBUG) System.out.print(scenarios[e][i] + " ");
 			}
+			if (PRINT_DEBUG) System.out.println();
 		}
 		
 		// consider K candidate bids
@@ -115,6 +129,16 @@ public class OSSCDP_BidEvaluator extends
 		for (int k=0;k<NUM_CANDIDATE_BID;k++)
 		{
 			double[] candidateBid = targetMU();
+			if (PRINT_DEBUG) 
+			{
+				System.out.print("Agent " + this.getIndex() + "'s candidate bid " + k + ": ");
+				for (int j=0;j<NUM_GOODS;j++)
+				{
+					System.out.print(candidateBid[j] + " ");
+				}
+				System.out.println();
+			}
+			
 			//boolean[] productWon = new boolean[NUM_GOODS];
 			double totalUtil = 0.0;
 			double utility = 0.0;
@@ -135,6 +159,8 @@ public class OSSCDP_BidEvaluator extends
 				utility = value - cost;
 				totalUtil += utility/(double)NUM_SCENARIO;
 			}
+			if (PRINT_DEBUG) System.out.println("Agent " + this.getIndex() + "'s candidate bid " + k + 
+					" has total utility of " + totalUtil);
 			if (totalUtil > bestUtil)
 			{
 				bestUtil = totalUtil;
@@ -143,6 +169,15 @@ public class OSSCDP_BidEvaluator extends
 					bestBid[i] = candidateBid[i];
 				}
 			}
+		}
+		if (PRINT_DEBUG)
+		{
+			System.out.print("Best bid is :");
+			for (int j=0;j<NUM_GOODS;j++)
+			{
+				System.out.print(bestBid[j] + " ");
+			}
+			System.out.println();
 		}
 		return bestBid;
 	}
@@ -157,11 +192,28 @@ public class OSSCDP_BidEvaluator extends
 		// Sample K scenarios
 		for (int k=0;k<NUM_SAMPLE;k++)
 		{
-			int dist_num;
+			double dist_num;
 			
 			for (int i=0;i<NUM_GOODS;i++)
 			{
-				dist_num  = 1 + ran.nextInt(NUM_SIMULATION + VALUE_UPPER_BOUND);
+				dist_num = cumulPrediction[i][VALUE_UPPER_BOUND] * ran.nextDouble();
+				int pos = Arrays.binarySearch(cumulPrediction[i], dist_num);
+				if (pos >= 0) 
+				{
+					// need to handle when there are multiple identical elements.
+					// backtrack for identical elements
+					while (cumulPrediction[pos] == cumulPrediction[pos-1])
+					{
+						pos--;
+					}
+					sumPrice[i] += pos;
+				}
+				else
+				{
+					sumPrice[i] += (pos * -1) - 1;
+				}
+				//dist_num  = 1 + ran.nextInt(NUM_SIMULATION + VALUE_UPPER_BOUND);
+				/*
 				for (int p=0;p<VALUE_UPPER_BOUND+1;p++)
 				{
 					if (dist_num <= cumulPrediction[i][p])
@@ -170,8 +222,10 @@ public class OSSCDP_BidEvaluator extends
 						break;
 					}
 				}
+				*/
 			}
 		}
+		
 		// Get the expectation over price distribution, i.e. sampled K scenarios
 		for (int i=0;i<NUM_GOODS;i++)
 		{
@@ -223,7 +277,7 @@ public class OSSCDP_BidEvaluator extends
 		BitSet maxSet = new BitSet();
 		for (BitSet bs : bitVector)
 		{
-			int value = typeDist.get(bs).intValue();
+			double value = (double)typeDist.get(bs).intValue();
 			double cost = 0.0;
 			for (int j=0;j<bs.length();j++)
 			{
