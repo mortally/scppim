@@ -16,13 +16,16 @@ public class OSSCPP_TargetMVStar extends SelfConfirmingPricePrediction {
 		super(index);
 	}
 	
-	public int[] bid(InformationState s)
+	public double[] bid(InformationState s)
 	{
-		int[] newBid = new int[NUM_GOODS];
-		int[] singleGoodValue = new int[NUM_GOODS];
-		int[] priceToBid = new int[NUM_GOODS];
-		int noPredCount = 0;
+		double[] newBid = new double[NUM_GOODS];
+		//int[] singleGoodValue = new int[NUM_GOODS];
+		//int[] priceToBid = new int[NUM_GOODS];
+		//int noPredCount = 0;
 		
+		double max_surplus = Double.MIN_VALUE;
+		BitSet maxSet = new BitSet();
+		/*
 		for (int i=0;i<NUM_GOODS;i++)
 		{
 			for (BitSet bs : bitVector)
@@ -52,8 +55,8 @@ public class OSSCPP_TargetMVStar extends SelfConfirmingPricePrediction {
 		}
 
 		// Given type-distribution and current information state find the subset that gives highest surplus
-		double max_surplus = Double.MIN_VALUE;
-		BitSet maxSet = new BitSet();
+		//double max_surplus = Double.MIN_VALUE;
+		//BitSet maxSet = new BitSet();
 		
 		if (noPredCount == NUM_GOODS) // No price prediction - baseline case
 		{
@@ -79,7 +82,7 @@ public class OSSCPP_TargetMVStar extends SelfConfirmingPricePrediction {
 				else newBid[i] = 0;
 			}
 		}
-		else
+		else*/
 		{
 			for (BitSet bs : bitVector)
 			{
@@ -152,8 +155,8 @@ public class OSSCPP_TargetMVStar extends SelfConfirmingPricePrediction {
 				} // end for
 				
 				double margVal = max_free_surplus - max_unavail_surplus;
-				
-				newBid[i] = margVal > 0 ? (int)Math.round(margVal) : 0;
+				margVal = (margVal > 0) ? margVal : 0;
+				newBid[i] = margVal;
 			}
 			
 			for (int i=0;i<NUM_GOODS;i++)

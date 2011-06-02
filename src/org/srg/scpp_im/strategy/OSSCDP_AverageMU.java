@@ -9,19 +9,20 @@ import java.util.BitSet;
 import java.util.Random;
 import java.util.Arrays;
 
-public class OSSCDP_AverageMV extends SelfConfirmingDistributionPricePrediction {
+public class OSSCDP_AverageMU extends SelfConfirmingDistributionPricePrediction {
 	
 	private static final long serialVersionUID = 100L;
 	//private static final int NUM_SAMPLE = 200;
 	
-	public OSSCDP_AverageMV(int index)
+	public OSSCDP_AverageMU(int index)
 	{
 		super(index);
 	}
 	
-	public int[] bid(InformationState s)
+	public double[] bid(InformationState s)
 	{
-		int[] newBid = new int[NUM_GOODS];
+		//double[] newBid = new double[NUM_GOODS];
+		/*
 		int[] singleGoodValue = new int[NUM_GOODS];
 		int[] priceToBid = new int[NUM_GOODS];
 		int noPredCount = 0;
@@ -47,7 +48,7 @@ public class OSSCDP_AverageMV extends SelfConfirmingDistributionPricePrediction 
 		}
 
 		// Given type-distribution and current information state find the subset that gives highest surplus
-		double max_surplus = Double.MIN_VALUE;
+		double max_surplus = 0;
 		BitSet maxSet = new BitSet();
 		
 		if (!this.isPricePredicting) // No price prediction - baseline case
@@ -74,14 +75,15 @@ public class OSSCDP_AverageMV extends SelfConfirmingDistributionPricePrediction 
 				else newBid[i] = 0;
 			}
 		}
-		else
-		{
-			double[] sampleBid = sampleMV();
+		else*/
+		//{
+		double[] newBid = sampleMV();
+			/*
 			for (int i=0;i<NUM_GOODS;i++)
 			{
 				newBid[i] = (int)Math.round(sampleBid[i]);
-			}
-		}
+			}*/
+		//}
 		return newBid;
 	}
 	
@@ -102,7 +104,7 @@ public class OSSCDP_AverageMV extends SelfConfirmingDistributionPricePrediction 
 				{
 					// need to handle when there are multiple identical elements.
 					// backtrack for identical elements
-					while (cumulPrediction[pos] == cumulPrediction[pos-1])
+					while (cumulPrediction[i][pos] == cumulPrediction[i][pos-1])
 					{
 						pos--;
 					}
@@ -127,12 +129,12 @@ public class OSSCDP_AverageMV extends SelfConfirmingDistributionPricePrediction 
 			// StraightMV on the single scenario
 			for (int i=0;i<NUM_GOODS;i++)
 			{
-				double max_free_surplus = Double.MIN_VALUE;
-				double max_unavail_surplus = Double.MIN_VALUE;
+				double max_free_surplus = 0;
+				double max_unavail_surplus = 0;
 				for (BitSet bs : bitVector)
 				{
-					double free_surplus = Double.MIN_VALUE;
-					double unavail_surplus = Double.MIN_VALUE;
+					double free_surplus = 0;
+					double unavail_surplus = 0;
 					int value = typeDist.get(bs).intValue();
 					double freeCost = 0.0;
 					double unavailCost = 0.0;
@@ -162,6 +164,7 @@ public class OSSCDP_AverageMV extends SelfConfirmingDistributionPricePrediction 
 				} // end for
 				
 				double margVal = max_free_surplus - max_unavail_surplus;
+				margVal = (margVal > 0) ? margVal : 0;
 				sumMV[i] += margVal / (double)NUM_SAMPLE;
 			}
 		}
@@ -170,12 +173,12 @@ public class OSSCDP_AverageMV extends SelfConfirmingDistributionPricePrediction 
 }
 
 			/*
-			double max_free_surplus = Double.MIN_VALUE;
-			double max_unavail_surplus = Double.MIN_VALUE;
+			double max_free_surplus = 0;
+			double max_unavail_surplus = 0;
 			for (BitSet bs : bitVector)
 			{
-				double free_surplus = Double.MIN_VALUE;
-				double unavail_surplus = Double.MIN_VALUE;
+				double free_surplus = 0;
+				double unavail_surplus = 0;
 				int value = typeDist.get(bs).intValue();
 				double freeCost = 0.0;
 				double unavailCost = 0.0;

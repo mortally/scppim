@@ -15,13 +15,14 @@ public class OSSCDP_StraightMU extends SelfConfirmingDistributionPricePrediction
 		super(index);
 	}
 	
-	public int[] bid(InformationState s)
+	public double[] bid(InformationState s)
 	{
-		int[] newBid = new int[NUM_GOODS];
-		int[] singleGoodValue = new int[NUM_GOODS];
-		int[] priceToBid = new int[NUM_GOODS];
-		int noPredCount = 0;
+		//int[] newBid = new int[NUM_GOODS];
+		//int[] singleGoodValue = new int[NUM_GOODS];
+		//int[] priceToBid = new int[NUM_GOODS];
+		//int noPredCount = 0;
 		
+		/*
 		for (int i=0;i<NUM_GOODS;i++)
 		{
 			for (BitSet bs : bitVector)
@@ -32,7 +33,8 @@ public class OSSCDP_StraightMU extends SelfConfirmingDistributionPricePrediction
 				}
 			}
 		}
-		
+		*/
+		/*
 		// no prediction 
 		if (!this.isPricePredicting)
 		{
@@ -71,13 +73,16 @@ public class OSSCDP_StraightMU extends SelfConfirmingDistributionPricePrediction
 			}
 		}
 		else
+		*/
+		//{
+		double[] newBid = sampleMV();
+		/*
+		for (int i=0;i<NUM_GOODS;i++)
 		{
-			double[] sampleBid = sampleMV();
-			for (int i=0;i<NUM_GOODS;i++)
-			{
-				newBid[i] = (int)Math.round(sampleBid[i]);
-			}
+			newBid[i] = (int)Math.round(sampleBid[i]);
 		}
+		*/
+		//}
 		return newBid;
 	}
 	
@@ -157,6 +162,7 @@ public class OSSCDP_StraightMU extends SelfConfirmingDistributionPricePrediction
 			} // end for
 			
 			double margVal = max_free_surplus - max_unavail_surplus;
+			margVal = (margVal > 0) ? margVal : 0;
 			mv[i] = margVal;
 		}
 		return mv;

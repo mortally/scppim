@@ -1,26 +1,30 @@
 package org.srg.scpp_im.strategy;
 
-import org.srg.scpp_im.game.Strategy;
-import org.srg.scpp_im.game.InformationState;
-import org.srg.scpp_im.game.GameSetting;
-import java.io.Serializable;
-import java.util.Map;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Random;
 
-public class OneShotDistributionAverageMV extends SelfConfirmingDistributionPricePrediction {
+import org.srg.scpp_im.game.InformationState;
+
+public class OSSCDP_ExtremeBidder extends 
+	SelfConfirmingDistributionPricePrediction {
 	
 	private static final long serialVersionUID = 100L;
-	private static final int NUM_SAMPLE = 500;
-	
-	public OneShotDistributionAverageMV(int index)
+
+	public OSSCDP_ExtremeBidder(int index)
 	{
 		super(index);
 	}
 	
-	public int[] bid(InformationState s)
+	// Override
+	public String getPPName()
 	{
-		int[] newBid = new int[NUM_GOODS];
+		return "OSSCDP_StraightMU";
+	}
+	
+	public double[] bid(InformationState s)
+	{
+		double[] newBid = new double[NUM_GOODS];
 		int[] singleGoodValue = new int[NUM_GOODS];
 		int[] priceToBid = new int[NUM_GOODS];
 		int noPredCount = 0;
@@ -75,30 +79,73 @@ public class OneShotDistributionAverageMV extends SelfConfirmingDistributionPric
 		}
 		else
 		{
+			double[] sampleBid = sampleMV();
 			for (int i=0;i<NUM_GOODS;i++)
 			{
-				newBid[i] = (int)Math.round(sampleMV(i));
+				newBid[i] = (int)Math.round(sampleBid[i]);
 			}
 		}
 		return newBid;
 	}
 	
-	private double sampleMV(int i)
+	private double[] sampleMV()
 	{
-		double sumMV = 0.0;
+		double[] sumPrice = new double[NUM_GOODS];
+		double[] average_price = new double[NUM_GOODS];
+		double[] mv = new double[NUM_GOODS];
 		Random ran = new Random();
+		
+		// Sample K scenarios
 		for (int k=0;k<NUM_SAMPLE;k++)
 		{
-			int sample_price = 0;
-			int dist_num = 1+ ran.nextInt(NUM_SIMULATION);
-			for (int p=0;p<VALUE_UPPER_BOUND+1;p++)
+			double dist_num;
+			
+			for (int i=0;i<NUM_GOODS;i++)
 			{
-				if (dist_num <= cumulPrediction[i][p])
+				dist_num = cumulPrediction[i][VALUE_UPPER_BOUND] * ran.nextDouble();
+				int pos = Arrays.binarySearch(cumulPrediction[i], dist_num);
+				if (pos >= 0) 
 				{
-					sample_price = p;
-					break;
+					// need to handle when there are multiple identical elements.
+					// backtrack for identical elements
+					while (cumulPrediction[pos] == cumulPrediction[pos-1])
+					{
+						pos--;
+					}
+					sumPrice[i] += pos;
+				}
+				else
+				{
+					sumPrice[i] += (pos * -1) - 1;
 				}
 			}
+		}
+		// Get the expectation over price distribution, i.e. sampled K scenarios
+		for (int i=0;i<NUM_GOODS;i++)
+		{
+			average_price[i] = sumPrice[i] / (double)NUM_SAMPLE;
+		}
+		double max_surplus = Double.MIN_VALUE;
+		BitSet maxSet = new BitSet();
+		for (BitSet bs : bitVector)
+		{
+			double value = (double)typeDist.get(bs).intValue();
+			double cost = 0.0;
+			for (int j=0;j<bs.length();j++)
+			{
+				if (bs.get(j)) cost += average_price[j];
+			}
+			value -= cost;
+			if (value > max_surplus)
+			{
+				maxSet = bs;
+				max_surplus = value;
+			}
+		}
+		
+		// TargetMV* on the average scenario
+		for (int i=0;i<NUM_GOODS;i++)
+		{
 			double max_free_surplus = Double.MIN_VALUE;
 			double max_unavail_surplus = Double.MIN_VALUE;
 			for (BitSet bs : bitVector)
@@ -116,8 +163,16 @@ public class OneShotDistributionAverageMV extends SelfConfirmingDistributionPric
 						if (i==j) unavailCost += Double.POSITIVE_INFINITY;
 						else
 						{
-							freeCost += sample_price;
-							unavailCost += sample_price;
+							if (maxSet.get(j))
+							{
+								freeCost += average_price[j];
+								unavailCost += average_price[j];
+							}
+							else
+							{
+								freeCost += Double.POSITIVE_INFINITY;
+								unavailCost += Double.POSITIVE_INFINITY;
+							}
 						}
 					}
 				}
@@ -134,9 +189,20 @@ public class OneShotDistributionAverageMV extends SelfConfirmingDistributionPric
 			} // end for
 			
 			double margVal = max_free_surplus - max_unavail_surplus;
-			sumMV += margVal;
+			mv[i] = margVal > 0 ? (int)Math.round(margVal) : 0;
 		}
-		return sumMV / (double)NUM_SAMPLE;
+		
+		for (int i=0;i<NUM_GOODS;i++)
+		{
+			if (max_surplus > 0 && maxSet.get(i)) 
+			{
+				mv[i] = max_surplus;
+			}
+			else mv[i] = 0; // reset bid for item to 0 if it is not a part of optimal solution.
+		}
+		
+		return mv;
 	}
+
 
 }

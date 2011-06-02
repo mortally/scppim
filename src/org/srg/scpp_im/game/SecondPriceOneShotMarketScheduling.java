@@ -1,6 +1,10 @@
 package org.srg.scpp_im.game;
 
 import com.csvreader.*;
+
+import org.srg.scpp_im.analysis.SCPPAnalyzer;
+import org.srg.scpp_im.analysis.UtilAnalyzer;
+import org.srg.scpp_im.strategy.OSSCDP_BidEvaluatorSMU_E64S256K4;
 import org.yaml.snakeyaml.*;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -8,12 +12,16 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.io.StringWriter;
+
+import	lpsolve.*;
 
 public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 
@@ -42,7 +50,7 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 	
 	public void register(Strategy s)
 	{
-		if (this.mode == GameSetting.TRAINING_MODE && numAgentsReceived == NUM_AGENT) return;
+		if (this.mode == GameSetting.TRAINING_MODE && numAgentsReceived == NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL) return;
 		if (this.mode == GameSetting.PRODUCTION_MODE && numAgentsReceived == NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL) return;
 		// get Strategy object here
 		
@@ -60,11 +68,34 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
         System.out.println();
         */
 		numAgentsReceived++;
-		if ((this.mode == GameSetting.TRAINING_MODE && numAgentsReceived == NUM_AGENT) ||
+		if ((this.mode == GameSetting.TRAINING_MODE && numAgentsReceived == NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL) ||
 			(this.mode == GameSetting.PRODUCTION_MODE && numAgentsReceived == NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL)) 
 		{
 			double[][] avgPrices = new double[NUM_ITERATION][NUM_GOODS];
 			double[] maxDists = new double[NUM_ITERATION];
+			String profile = "";
+			
+			if (PROFILE_BASED)
+			{
+				Map<String, Integer> strategyMap = createUniqueStrategyMap();
+				Set<String> strategySet = strategyMap.keySet();
+				Object[] strategyObjArray = strategySet.toArray();
+				String[] strategyArray = new String[strategyObjArray.length];
+				
+				for (int i=0;i<strategyArray.length;i++)
+				{
+					strategyArray[i] = (String)strategyObjArray[i];
+				}
+				
+				Arrays.sort(strategyArray);
+				
+				for (int i=0;i<strategyArray.length;i++)
+				{
+					String name = strategyArray[i];
+					int count = strategyMap.get(name).intValue();
+					profile += (name + "_" + count + "_");
+				}
+			}
 			
 			if (this.mode == GameSetting.PRODUCTION_MODE)
 			{
@@ -72,7 +103,13 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 				String path = pp_path + GameSetting.GAME_TYPE + "/" + GameSetting.DIST_TYPE + "/";
 				for (Strategy strat : strategies)
 				{
-					String filename = strat.getPPName()  + "_N" + (NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL) + "M" + NUM_GOODS + "V" + VALUE_UPPER_BOUND +  ".csv";
+					String filename;
+					if (PROFILE_BASED) filename = profile + "N" + (NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL) + "M" + NUM_GOODS + "V" + VALUE_UPPER_BOUND +  ".csv";
+					else 
+					{
+						if (HIGHEST_BID_PREDICTION) filename = strat.getPPName()  + "_HB_N" + (NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL) + "M" + NUM_GOODS + "V" + VALUE_UPPER_BOUND +  ".csv";
+						else filename = strat.getPPName()  + "_N" + (NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL) + "M" + NUM_GOODS + "V" + VALUE_UPPER_BOUND +  ".csv";
+					}
 					File f = new File(path + filename);
 					if (!f.exists())
 					{
@@ -111,6 +148,24 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 								cr.close();
 								strat.setPricePrediction(pp);
 							}
+							else if (strat.getPredictionType() == DISTRIBUTION_MIX)
+							{
+								double[][][] pp = new double[NUM_DIST_MIX][NUM_GOODS][VALUE_UPPER_BOUND+1];
+								for (int i=0;i<NUM_DIST_MIX;i++)
+								{
+									for (int j=0;j<NUM_GOODS;j++)
+									{
+										cr.readRecord();
+										for (int k=0;k<VALUE_UPPER_BOUND+1;k++)
+										{
+											pp[i][j][k] = Double.parseDouble(cr.get(k));
+											//System.out.println("!!!!!!!!!: " + pp[i][k]);
+										}
+									}
+								}
+								cr.close();
+								strat.setPricePrediction(pp);
+							}
 						}
 						catch (Exception e)
 						{
@@ -129,14 +184,16 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 				}
 				//pp = prevAvg;
 				
-				
+				/*
 				for (Strategy st : strategies)
 				{
 					st.printPrediction();
 				}
-				
-				
+				*/
+				if (ENABLE_ANALYZER) analyzer = new SCPPAnalyzer();
 				avgPrice = new double[NUM_GOODS];
+				sumOptValue = 0.0;
+				simulCount = 0;
 				for (int i=0;i<NUM_SIMULATION;i++)
 				{
 					if (GameSetting.DIST_TYPE.equalsIgnoreCase("original"))
@@ -161,11 +218,11 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 					//System.out.println(i + " th simulation running..");
 					run();
 				}
-				
 				if (this.mode == GameSetting.PRODUCTION_MODE)
 				{
-					if (j == GameSetting.NUM_ITERATION - 1) writeResult(true);
-					else writeResult(false);
+					if (j == GameSetting.NUM_ITERATION - 1) writeResult(true, j);
+					else writeResult(false, j);
+					//writeValueResult();
 					/*
 					System.out.println("Average Utility");
 					for (Strategy strat : strategies)
@@ -175,6 +232,18 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 					}
 					System.out.println();
 					*/
+					double sumAvgValue = 0;
+					double avgOptValue = sumOptValue / NUM_SIMULATION;
+					for (Strategy st : strategies)
+					{
+						sumAvgValue += st.getAverageValue();
+						st.resetObservation();
+					}
+					//double avgValue = sumAvgValue / (NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL);
+					//System.out.println("AvgOpt Total = " + avgOptValue + ", AvgVal Total = " + sumAvgValue);
+					//System.out.println("Efficiency = " + (sumAvgValue / avgOptValue * 100) + "%");
+					//System.out.println(sumAvgValue / avgOptValue * 100);
+					System.out.println("Candidate util = " + UtilAnalyzer.bestCandidateUtil / (NUM_SIMULATION * NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL));
 				}
 				else if (this.mode == GameSetting.TRAINING_MODE)
 				{
@@ -215,13 +284,19 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 					System.out.println(max_dist);
 				}
 				maxDists[j] = max_dist;
-				
+				//System.out.println("Distance between prediction and actual prices = " + this.getAccDist());
 				// Write out prediction as CSV file when its distance goes below threshold.
 				if (this.mode == GameSetting.TRAINING_MODE)
 				{
 					Strategy strat = strategies.get(0); // Assuming all strategies are same, get the first strategy
-					String path = pp_path + GameSetting.GAME_TYPE + "/" + GameSetting.DIST_TYPE + "/";
-					String filename = strat.getName()  + "_N" + NUM_AGENT + "M" + NUM_GOODS + "V" + VALUE_UPPER_BOUND + ".csv";
+					String path = pp_output_path + GameSetting.GAME_TYPE + "/" + GameSetting.DIST_TYPE + "/";
+					String filename;
+					if (PROFILE_BASED) filename = profile + "N" + (NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL) + "M" + NUM_GOODS + "V" + VALUE_UPPER_BOUND + ".csv"; 
+					else 
+					{
+						if (HIGHEST_BID_PREDICTION) filename = strat.getPPName()  + "_HB_N" + (NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL) + "M" + NUM_GOODS + "V" + VALUE_UPPER_BOUND +  ".csv";
+						else filename = strat.getPPName()  + "_N" + (NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL) + "M" + NUM_GOODS + "V" + VALUE_UPPER_BOUND +  ".csv";
+					}
 					File fPath = new File(path);
 					if (!fPath.exists()) fPath.mkdirs();
 					if (strat.getPredictionType() == GameSetting.POINT && Math.abs(max_dist/(double)VALUE_UPPER_BOUND) < GameSetting.MIN_POINT_DIST_TO_TERMINATE)
@@ -239,7 +314,8 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 							cw.endRecord();
 							cw.flush();
 							cw.close();
-							System.exit(0);
+							break;
+							//System.exit(0);
 						}
 						catch(Exception e)
 						{
@@ -264,7 +340,8 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 							cw.endRecord();
 							cw.flush();
 							cw.close();
-							System.exit(0);
+						//	System.exit(0);
+							break;
 						}
 						catch(Exception e)
 						{
@@ -272,8 +349,9 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 						}
 					}
 				}
-				
 			}
+			
+			if (ENABLE_ANALYZER) analyzer.printUtilityStatistics();
 			if (PRINT_OUTPUT)
 			{
 				for (int j=0;j<NUM_ITERATION;j++)
@@ -290,6 +368,29 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 					System.out.println(maxDists[j]);
 				}
 				System.out.println();
+				System.out.print("std. dev. of payoffs are: ");
+				for (int i=0;i<NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;i++)
+				{
+					this.averagePayoff[i] = this.averagePayoff[i] / (double)NUM_ITERATION; 
+					double SS = 0.0;
+					for (int j=0;j<NUM_ITERATION;j++)
+					{
+						SS += Math.pow((double)payoffRecord[i][j] - averagePayoff[i], 2.0);
+					}
+					double sampleVariance = SS / (double)(NUM_ITERATION - 1);
+					double stddev = Math.sqrt(sampleVariance);
+					System.out.print(stddev + " ");
+				}
+				System.out.println();
+				System.out.println("Payoff records:");
+				for (int i=0;i<NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;i++)
+				{
+					for (int j=0;j<NUM_ITERATION;j++)
+					{
+						System.out.print(this.payoffRecord[i][j] + " ");
+					}
+					System.out.println();
+				}
 			}
 			
 			/*
@@ -305,11 +406,96 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 				payoff_out.flush();
 				payoff_out.close();
 			}
-			System.exit(0);
+			//System.exit(0);
 		}
 	}
 	
-	private void writeResult(boolean lastIteration)
+	/*
+	private void printVariance()
+	{
+		System.out.print("Variances of utilities are: ");
+		for (Strategy s : strategies)
+		{
+			double meanUtil = s.getAverageUtility();
+			int[] utilityRecord = s.getUtilityRecord();
+			double SS = 0.0;
+			for (int i=0;i<utilityRecord.length;i++)
+			{
+				SS += Math.pow((double)utilityRecord[i] - meanUtil, 2.0);
+			}
+			
+			double sampleVariance = SS / (double)(utilityRecord.length - 1);
+			System.out.print(sampleVariance + " ");
+		}
+		System.out.println();
+	}
+	*/
+	
+	private void writeValueResult()
+	{
+		Map<String, Object> valueMap = new HashMap<String, Object>(); // Average value for a strategy
+		Map<String, Integer> countMap = new HashMap<String, Integer>(); // Count # of agents with same strategy
+		
+		ArrayList<String> namespace = new ArrayList<String>();
+		
+		for (Strategy s : strategies)
+		{
+			String name = s.getName();
+			double value = s.getAverageValue();
+			
+			if (!namespace.contains(name))
+			{
+				namespace.add(name);
+			}
+			
+			if (valueMap.containsKey(name))
+			{
+				double v = Double.parseDouble(valueMap.get(name).toString());
+				int count = Integer.parseInt(countMap.get(name).toString());
+				
+				v = v + value;
+				count++;
+				
+				valueMap.put(name, v);
+				countMap.put(name, count);
+			}
+			else
+			{
+				valueMap.put(name, value);
+				countMap.put(name, 1);
+			}
+		}
+		
+		for (String s : namespace)
+		{
+			double v = Double.parseDouble(valueMap.get(s).toString());
+			int count = Integer.parseInt(countMap.get(s).toString());
+			
+			v = v / (double)count;
+			try
+			{
+				//File fPath = new File(SIMUL_PATH + "features/");
+				//if (!fPath.exists()) fPath.mkdirs();
+				OutputStream os = new FileOutputStream(new File(SIMUL_PATH + "/features/" + s), true);
+				PrintStream ps = new PrintStream(os);
+				DumperOptions options = new DumperOptions();
+				options.setExplicitStart(true);
+				options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+				Yaml y = new Yaml(options);
+				StringWriter w = new StringWriter();
+				y.dump(v, w);
+				ps.print(w);
+				ps.flush();
+				ps.close();
+				//os.close();
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
+	}
+	private void writeResult(boolean lastIteration, int currentIt)
 	{
 		Map<String, Object> payoffMap = new HashMap<String, Object>(); // Average payoff for a strategy
 		Map<String, Integer> countMap = new HashMap<String, Integer>(); // Count # of agents with same strategy
@@ -320,6 +506,9 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 		{
 			String name = s.getName();
 			double payoff = s.getAverageUtility();
+			
+			this.payoffRecord[s.getIndex()-1][currentIt] = payoff;
+			this.averagePayoff[s.getIndex()-1] += payoff;
 			
 			if (!namespace.contains(name))
 			{
@@ -342,7 +531,6 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 				payoffMap.put(name, payoff);
 				countMap.put(name, 1);
 			}
-			s.resetObservation();
 		}
 		
 		for (String s : namespace)
@@ -365,6 +553,23 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 		Yaml y = new Yaml(options);
 		y.dump(payoffMap, w);
 		payoff_out.print(w.toString());	
+	}
+	
+	private Map<String, Integer> createUniqueStrategyMap()
+	{
+		Map<String, Integer> map = new HashMap<String, Integer>();
+		for (Strategy s : strategies)
+		{
+			String name = s.getName();
+			if (map.containsKey(name))
+			{
+				int count = map.get(name).intValue();
+				count++;
+				map.put(name, count);
+			}
+			else map.put(name, 1);
+		}
+		return map;
 	}
 	
 	private void initTypeDistBayesian()
@@ -507,9 +712,13 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 	private void initTypeDistOriginal()
 	{
 		Random ran = new Random();
+		int numSets = (int)Math.pow(2, NUM_GOODS);
+		double[] values = new double[NUM_AGENT *
+		                               HIERARCHICAL_REDUCTION_LEVEL * numSets];
 		// single-unit demand for agent_1
 		//System.out.println(v_one + " " + v_i_upper_bound);
 		Iterator<Strategy> iter = strategies.iterator();
+		int coeff_count = 0;
 		while(iter.hasNext())
 		{
 			Strategy s = iter.next();
@@ -553,6 +762,7 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 				if (bs.cardinality() < jobLength) 
 				{
 					typeDist.put(bs, new Integer(0));
+					values[coeff_count] = 0;
 				}
 				else
 				{
@@ -560,16 +770,127 @@ public class SecondPriceOneShotMarketScheduling extends SecondPriceOneShotGame {
 					int deadline = 0;
 					for (int i=0;i<bs.length();i++)
 					{
-						if (bs.get(i)) count++;
-						if (count == jobLength) deadline = i;
+						if (bs.get(i)) {
+							count++;
+						}
+						if (count == jobLength) {
+							deadline = i;
+							break;
+						}
 					}
 					typeDist.put(bs, new Integer(deadlineValues[deadline]));
+					values[coeff_count] = deadlineValues[deadline];
 				}
-				
+				coeff_count++;
 			}
-			
 			s.setTypeDist(typeDist);
 		} // end while
+		
+		/*
+		System.out.println("values");
+		for (int i=0;i<values.length;i++)
+		{
+			System.out.print(values[i] + " ");
+			if ((i+1)%numSets == 0) System.out.println();
+		}
+		*/
+		
+		////////////////////////////////////////////////////////////////////////
+		// value allocation optimization
+		////////////////////////////////////////////////////////////////////////
+		
+		/*
+		int numVar = numSets * NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;
+		
+		try
+		{
+			int[] colNo = new int[numSets];
+			double[] row = new double[numSets];
+			LpSolve solver = LpSolve.makeLp(0, numVar);
+			solver.setObjFn(values);
+			solver.setVerbose(0);
+			solver.setMaxim();
+			for (int i=1;i<=numVar;i++)
+			{
+				solver.setBinary(i, true);
+			}
+			double[] constraint = new double[numVar];
+			for (int i=0;i<NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;i++)
+			{
+				int count = 0;
+				constraint = new double[numVar];
+				colNo = new int[numSets];
+				row = new double[numSets];
+				for (int j=1;j<numSets;j++)
+				{
+					constraint[i * numSets + j] = 1;
+					//colNo[count] = 1 + i * numSets + j;
+					//row[count] = 1;
+					//count++;
+				}
+				solver.addConstraint(constraint, LpSolve.LE, 1);
+				//solver.addConstraintex(count, row, colNo, LpSolve.LE, 1);
+			}
+			for (int j=1;j<numSets;j++)
+			{
+				int count = 0;
+				constraint = new double[numVar];
+				colNo = new int[numSets];
+				row = new double[numSets];
+				for (int i=0;i<NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;i++)
+				{
+					//colNo[count] = 1 + i * numSets + j;
+					//row[count] = 1;
+					//count++;
+					constraint[i * numSets + j]  = 1;
+				}
+				solver.addConstraint(constraint, LpSolve.LE, 1);
+				//solver.addConstraintex(count, row, colNo, LpSolve.LE, 1);
+			}
+			
+			int bitLen = 0;
+			int count = 0;
+		
+			for (int i=0;i<NUM_GOODS;i++)
+			{
+				colNo = new int[numSets * NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL];
+				row = new double[numSets* NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL];
+				constraint = new double[numVar];
+				count = 0;
+				for (int j=0;j<bitVector.length;j++)
+				{
+					if (bitVector[j].get(i))
+					{
+						for (int k=0;k<NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;k++)
+						{
+							constraint[k * numSets + j] = 1;
+							//colNo[count] = 1 + k * numSets + j;
+							//row[count] = 1;
+							//count++;
+						}
+					}
+				}
+				solver.addConstraint(constraint, LpSolve.LE, 1);
+				//solver.addConstraintex(count, row, colNo, LpSolve.LE, 1);
+			}
+			solver.setDebug(true);
+			//solver.addConstraint(constraint, LpSolve.EQ, numSets - 1);
+			solver.solve();
+			//double[] var = solver.getPtrVariables();
+			//double[] consts = solver.getPtrConstraints();
+			//System.out.println("Value of objective function: " + solver.getObjective());
+			sumOptValue += solver.getObjective();
+			//double sum = 0;
+	
+			solver.deleteLp();
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		*/
+		////////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////////	
 		
 		if (PRINT_DEBUG)
 		{

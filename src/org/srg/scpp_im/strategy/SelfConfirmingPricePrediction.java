@@ -8,6 +8,7 @@ import java.io.Serializable;
 import java.io.File;
 import java.util.Map;
 import java.util.BitSet;
+import java.util.Random;
 
 public class SelfConfirmingPricePrediction extends GameSetting implements Serializable, Strategy {
 	
@@ -22,9 +23,11 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 	protected double[] prevPrediction;
 	protected BitSet[] bitVector;
 	
-	protected int[] priceObservation = new int[NUM_GOODS];
+	protected double[] priceObservation = new double[NUM_GOODS];
+	protected double[] utilityRecord = new double[NUM_SIMULATION];
 	protected int observationCount = 0;
-	protected int cumulatedUtility = 0;
+	protected double cumulatedUtility = 0;
+	protected double cumulatedValue = 0;
 	protected final int prediction_type = POINT;
 	
 	public SelfConfirmingPricePrediction(int index)
@@ -53,6 +56,17 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 			}
 			bitVector[i] = bs;
 		}
+		if (RANDOM_INITIAL_PREDICTION)
+		{
+			Random r = new Random();
+			
+			for (int i=0;i<NUM_GOODS;i++)
+			{
+				this.pricePrediction[i] = r.nextInt(VALUE_UPPER_BOUND+1);
+			}
+		}
+		//System.out.println("!!!!!!!!!!");
+		
 	}
 	
 	public SelfConfirmingPricePrediction(int index, Map<BitSet, Integer> typeDist)
@@ -153,13 +167,18 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 		return (double)this.cumulatedUtility / (double)this.observationCount;
 	}
 	
-	public int getCurrentSurplus(InformationState s)
+	public double getAverageValue()
 	{
-		int[] currentBid = s.getCurrentBidPrice();
+		return this.cumulatedValue / (double)this.observationCount;
+	}
+	
+	public double getCurrentSurplus(InformationState s)
+	{
+		double[] currentBid = s.getCurrentBidPrice();
 		int[] currentWinning = s.getCurrentBidWinning();
 		
 		BitSet bs = new BitSet();
-		int cost = 0;
+		double cost = 0.0;
 		for (int i=0;i<NUM_GOODS;i++)
 		{
 			if (currentWinning[i] == index)
@@ -168,23 +187,30 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 				cost += currentBid[i];
 			}
 		}
-		int value;
+		double value;
 		value = typeDist.get(bs) != null ? typeDist.get(bs).intValue() : 0;
-		int utility = value - cost;
+		double utility = value - cost;
+		this.utilityRecord[this.observationCount] = utility;
+		cumulatedValue += value;
 		//cumulatedUtility += utility;
 		return utility;
 	}
-	
+	public double[] getUtilityRecord()
+	{
+		return this.utilityRecord;
+	}
 	public void addObservation(InformationState s)
 	{
-		int[] finalPrice = s.getCurrentBidPrice();
+		double[] finalPrice;
+		if (HIGHEST_BID_PREDICTION) finalPrice = s.getCurrentTopAvgPrice(); 
+		else finalPrice = s.getCurrentBidPrice();
 		
 		for (int i=0;i<NUM_GOODS;i++)
 		{
 			priceObservation[i] += finalPrice[i];
 		}
-		this.observationCount++;
 		cumulatedUtility += this.getCurrentSurplus(s);
+		this.observationCount++;
 	}
 	
 	public double getMaxDist()
@@ -199,6 +225,27 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 				max_dist = diff;
 			}
 			//System.out.print(avgPrice[i] + " ");
+		}
+		return max_dist;
+	}
+	
+	public double getMaxDist(double pp[][])
+	{
+		double max_dist = 0;
+		double diff;
+		double[] avgPrices = new double[NUM_GOODS];
+		for (int i=0;i<NUM_GOODS;i++)
+		{
+			for (int j=0;j<NUM_SIMULATION;j++)
+			{
+				avgPrices[i] += pp[j][i];
+			}
+			avgPrices[i] = avgPrices[i] / (double)NUM_SIMULATION;
+			diff = avgPrices[i] - this.pricePrediction[i];
+			if (Math.abs(diff) > Math.abs(max_dist))
+			{
+				max_dist = diff;
+			}
 		}
 		return max_dist;
 	}
@@ -224,7 +271,7 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 			//double prev = prevPrediction[i];
 			this.prevPrediction[i] = this.pricePrediction[i];
 			double diff = ((double)this.priceObservation[i]/(double)this.observationCount) - this.pricePrediction[i];
-			diff = diff * (GameSetting.NUM_ITERATION - currentIt) * 2 / (GameSetting.NUM_ITERATION * 2); // decreases by 1/NUM_ITERATION each time
+			diff = diff * (GameSetting.NUM_ITERATION - currentIt) / (GameSetting.NUM_ITERATION); // decreases by 1/NUM_ITERATION each time
 			this.pricePrediction[i] = this.pricePrediction[i] + diff;
 			//this.pricePrediction[i] = (this.pricePrediction[i] + (double)this.priceObservation[i]/(double)this.observationCount) / 2.0;
 			this.priceObservation[i] = 0;
@@ -239,15 +286,17 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 			this.priceObservation[i] = 0;
 		}
 		this.observationCount = 0;
+		this.cumulatedValue = 0;
 		this.cumulatedUtility = 0;
 	}
 	
-	public int[] bid(InformationState s)
+	public double[] bid(InformationState s)
 	{
-		int[] currentBid = s.getCurrentBidPrice();
+		double[] newBid = new double[NUM_GOODS];
+		
+		double[] currentBid = s.getCurrentBidPrice();
 		int[] currentWinning = s.getCurrentBidWinning();
 		double[] currentPrediction = new double[NUM_GOODS];
-		int[] newBid = new int[NUM_GOODS];
 		/*
 		for (int i=0;i<currentBid.length;i++)
 		{
@@ -276,23 +325,12 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 			//System.out.print(currentPrediction[i] + " ");
 		}
 		//System.out.println();
+		
 		// Given type-distribution and current information state find the subset that gives highest surplus
 		double max_surplus = Double.MIN_VALUE;
 		BitSet maxSet = new BitSet();
 		for (BitSet bs : bitVector)
 		{
-			/*BitSet bs = new BitSet();
-			String bits = Integer.toBinaryString(i);
-			bits = new StringBuffer(bits).reverse().toString();
-			int[] bit = new int[bits.length()];
-			for (int j=0;j<bits.length();j++)
-			{
-				char bitChar = bits.charAt(j);
-				String bitStr = String.valueOf(bitChar);
-				bit[j] = Integer.parseInt(bitStr);
-				if (bit[j] == 1) bs.set(j, true);
-				else bs.set(j, false);
-			}*/
 			int value = typeDist.get(bs).intValue();
 			
 			double cost = 0.0;

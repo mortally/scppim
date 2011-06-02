@@ -22,8 +22,10 @@ public class OSSCDP_BidEvaluatorSMU extends
 		return "OSSCDP_StraightMU";
 	}
 
-	public int[] bid(InformationState s)
+	public double[] bid(InformationState s)
 	{
+		System.out.println("Scenario size = " + NUM_SCENARIO);
+		/*
 		int[] newBid = new int[NUM_GOODS];
 		int[] singleGoodValue = new int[NUM_GOODS];
 		int[] priceToBid = new int[NUM_GOODS];
@@ -50,7 +52,7 @@ public class OSSCDP_BidEvaluatorSMU extends
 		}
 
 		// Given type-distribution and current information state find the subset that gives highest surplus
-		double max_surplus = Double.MIN_VALUE;
+		double max_surplus = 0;
 		BitSet maxSet = new BitSet();
 		
 		if (!this.isPricePredicting) // No price prediction - baseline case
@@ -77,14 +79,14 @@ public class OSSCDP_BidEvaluatorSMU extends
 				else newBid[i] = 0;
 			}
 		}
-		else
-		{
-			double[] sampleBid = sampleMV();
-			for (int i=0;i<NUM_GOODS;i++)
+		else*/
+		//{
+		double[] newBid = sampleMV();
+		/*	for (int i=0;i<NUM_GOODS;i++)
 			{
 				newBid[i] = (int)Math.round(sampleBid[i]);
-			}
-		}
+			}*/
+		//}
 		return newBid;
 	}
 	
@@ -108,7 +110,7 @@ public class OSSCDP_BidEvaluatorSMU extends
 				int pos = Arrays.binarySearch(cumulPrediction[i], dist_num);
 				if (pos >= 0) 
 				{
-					while (cumulPrediction[pos] == cumulPrediction[pos-1])
+					while (cumulPrediction[i][pos] == cumulPrediction[i][pos-1])
 					{
 						pos--;
 					}
@@ -123,7 +125,7 @@ public class OSSCDP_BidEvaluatorSMU extends
 		
 		// consider K candidate bids
 		double[] bestBid = new double[NUM_GOODS];
-		double bestUtil = Double.MIN_VALUE;
+		double bestUtil = 0;
 		for (int k=0;k<NUM_CANDIDATE_BID;k++)
 		{
 			double[] candidateBid = straightMU();
@@ -197,7 +199,7 @@ public class OSSCDP_BidEvaluatorSMU extends
 				{
 					// need to handle when there are multiple identical elements.
 					// backtrack for identical elements
-					while (cumulPrediction[pos] == cumulPrediction[pos-1])
+					while (cumulPrediction[i][pos] == cumulPrediction[i][pos-1])
 					{
 						pos--;
 					}
@@ -218,12 +220,12 @@ public class OSSCDP_BidEvaluatorSMU extends
 		// StraightMV on the average scenario
 		for (int i=0;i<NUM_GOODS;i++)
 		{
-			double max_free_surplus = Double.MIN_VALUE;
-			double max_unavail_surplus = Double.MIN_VALUE;
+			double max_free_surplus = 0;
+			double max_unavail_surplus = 0;
 			for (BitSet bs : bitVector)
 			{
-				double free_surplus = Double.MIN_VALUE;
-				double unavail_surplus = Double.MIN_VALUE;
+				double free_surplus = 0;
+				double unavail_surplus = 0;
 				int value = typeDist.get(bs).intValue();
 				double freeCost = 0.0;
 				double unavailCost = 0.0;
@@ -253,7 +255,7 @@ public class OSSCDP_BidEvaluatorSMU extends
 			} // end for
 			
 			double margVal = max_free_surplus - max_unavail_surplus;
-			mv[i] = margVal;
+			mv[i] = (margVal > 0) ? margVal : 0;
 		}
 		return mv;
 	}

@@ -1,22 +1,28 @@
 ---
-- OSSCPP_TargetMV
-- OSSCPP_TargetMV
-- OSSCPP_TargetMV
-- OSSCDP_SAASMU
+- SEQ_MDPOptimalV2
+- SEQ_MDPOptimal
+- SEQ_MDPOptimalV2
+- SEQ_MDPOptimalV2
 ---
-game type: "SecondPriceOneShotMarketScheduling"
-dist type: "Original"
-num goods: 5
-num agents: 4
+size: 5.0
+name: U[5,5]
+description: ""
+game type: "SecondPriceSequentialMarketScheduling"
+dist type: "Manual"
+num goods: 3
+num agents: 2
 num iterations: 1
 num simulations: 1
 num sample: 8
 num scenario: 32
 num candidate bid: 4
-hierarchical reduction level: 2
+num dist mix: 5
+hierarchical reduction level: 1
 value upper bound: 50
 print debug: "true"
 print output: "true"
+enable analyzer: "false"
+profile based: "true"
 update threshold: 0.5
 min point dist to terminate: 0.001
 min distribution dist to terminate: 0.01

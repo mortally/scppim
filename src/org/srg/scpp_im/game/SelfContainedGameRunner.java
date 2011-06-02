@@ -12,26 +12,30 @@ import java.util.List;
 import java.util.LinkedHashMap;
 import java.io.*;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
+//import javax.xml.parsers.DocumentBuilder;
+//import javax.xml.parsers.DocumentBuilderFactory;
+//import javax.xml.parsers.ParserConfigurationException;
+//import org.w3c.dom.Document;
+//import org.w3c.dom.Element;
+//import org.w3c.dom.NodeList;
+//import org.xml.sax.SAXException;
 import org.yaml.snakeyaml.*;
+
+import lpsolve.*;
 
 public class SelfContainedGameRunner extends GameSetting {
 	
-	private static Document dom;
-	private static String game;
-	private static String stratToTrain = "";
-	private static boolean numAgentSpecified = false;
-	private static ArrayList<Strategy> strategies;
-	private static String mode;
-	private static double[][] avgPrices;
-	private static double[] avgPrice;
-	private static BitSet[] bitVector;
+	//protected static Document dom;
+	protected static String game;
+	protected static String stratToTrain = "";
+	protected static String stratToProduce = "";
+	protected static boolean numAgentSpecified = false;
+	protected static ArrayList<Strategy> strategies;
+	protected static List<String> strNames;
+	protected static String mode;
+	protected static double[][] avgPrices;
+	protected static double[] avgPrice;
+	protected static BitSet[] bitVector;
 	
 	public static void main(String[] args)
 	{
@@ -61,6 +65,11 @@ public class SelfContainedGameRunner extends GameSetting {
 		}
 		*/
 		strategies = new ArrayList<Strategy>();
+		
+		if (!mode.equalsIgnoreCase("training") && args.length > 3) {
+			stratToProduce = args[3];
+		}
+		
 		parseSimulationSpecYAML(SIMUL_PATH + "/simulation_spec.yaml");
 		//parseGameSettingXML(fileName);
 		
@@ -90,7 +99,6 @@ public class SelfContainedGameRunner extends GameSetting {
 			}
 			bitVector[i] = bs;
 		}
-		
 		try
 		{
 			Class serverClass = Class.forName("org.srg.scpp_im.game." + game);
@@ -126,7 +134,7 @@ public class SelfContainedGameRunner extends GameSetting {
 		}
 	}
 	
-	private static void parseSimulationSpecYAML(String file)
+	protected static void parseSimulationSpecYAML(String file)
 	{
 		try
 		{
@@ -134,7 +142,7 @@ public class SelfContainedGameRunner extends GameSetting {
 			Yaml yaml = new Yaml();
 			
 			Iterator<Object> spec = yaml.loadAll(input).iterator();
-			List<String> strNames = (List<String>)spec.next();
+			strNames = (List<String>)spec.next();
 			LinkedHashMap config = (LinkedHashMap)spec.next();
 			
 			if (!numAgentSpecified) GameSetting.NUM_AGENT = (int)Double.parseDouble(config.get("num agents").toString());
@@ -151,8 +159,12 @@ public class SelfContainedGameRunner extends GameSetting {
 			assert GameSetting.NUM_SCENARIO > 0;
 			GameSetting.NUM_CANDIDATE_BID = (int)Double.parseDouble(config.get("num candidate bid").toString());
 			assert GameSetting.NUM_CANDIDATE_BID > 0;
+			//GameSetting.NUM_DIST_MIX = (int)Double.parseDouble(config.get("num dist mix").toString());
+			//assert GameSetting.NUM_DIST_MIX > 0;
 			GameSetting.PRINT_DEBUG = Boolean.parseBoolean(config.get("print debug").toString());
 			GameSetting.PRINT_OUTPUT = Boolean.parseBoolean(config.get("print output").toString());
+			GameSetting.PROFILE_BASED = Boolean.parseBoolean(config.get("profile based").toString());
+			GameSetting.ENABLE_ANALYZER = Boolean.parseBoolean(config.get("enable analyzer").toString());
 			GameSetting.UPDATE_THRESHOLD = Double.parseDouble(config.get("update threshold").toString());
 			GameSetting.VALUE_UPPER_BOUND = (int)Double.parseDouble(config.get("value upper bound").toString());
 			assert GameSetting.VALUE_UPPER_BOUND > 0;
@@ -174,26 +186,39 @@ public class SelfContainedGameRunner extends GameSetting {
 		    	System.exit(-1);
 			}
 			
+			if (mode.equalsIgnoreCase("training")) 
+			{
+				if (!PROFILE_BASED) GameSetting.HIERARCHICAL_REDUCTION_LEVEL = 1;
+			}
+			
+			GameSetting.TOTAL_AGENTS = NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;
+			
 			for (int i=0;i<NUM_AGENT;i++)
 		    {
 				String strategyName = "";
-				if (!mode.equalsIgnoreCase("training")) strategyName = "org.srg.scpp_im.strategy." + strNames.get(i);
+				if (!mode.equalsIgnoreCase("training")) 
+				{
+					if (stratToProduce.isEmpty()) strategyName = "org.srg.scpp_im.strategy." + strNames.get(i);
+					else strategyName = "org.srg.scpp_im.strategy." + stratToProduce;
+				}
 				else if (mode.equalsIgnoreCase("training")) 
 				{
-					GameSetting.HIERARCHICAL_REDUCTION_LEVEL = 1;
-					if (stratToTrain.isEmpty())	strategyName = "org.srg.scpp_im.strategy." + strNames.get(0); // only uses the first instance for training.
+					if (stratToTrain.isEmpty())	strategyName = (PROFILE_BASED) ? 
+							"org.srg.scpp_im.strategy." + strNames.get(i) :
+							"org.srg.scpp_im.strategy." + strNames.get(0); // only uses the first instance for training.
 					else strategyName = "org.srg.scpp_im.strategy." + stratToTrain;
 				}
 		    	System.out.println(strategyName);
 
 		    	Class agentClass = Class.forName(strategyName);
 		    	Constructor con = agentClass.getConstructor(int.class);
+		    	/*
 		    	if (mode.equalsIgnoreCase("training"))
 		    	{
 		    		Strategy s = (Strategy)con.newInstance(i+1);
 		    		strategies.add(s);
 		    	}
-		    	else 
+		    	else*/ 
 		    	{
 		    		for (int j=0;j<HIERARCHICAL_REDUCTION_LEVEL;j++)
 		    		{
@@ -208,8 +233,8 @@ public class SelfContainedGameRunner extends GameSetting {
 			e.printStackTrace();
 		}
 	}
-	
-	private static void parseGameSettingXML(String file)
+	/*
+	protected static void parseGameSettingXML(String file)
 	{
 		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 		
@@ -274,5 +299,5 @@ public class SelfContainedGameRunner extends GameSetting {
 	    		e.printStackTrace();
 	    	}
 	    }
-	}
+	}*/
 }

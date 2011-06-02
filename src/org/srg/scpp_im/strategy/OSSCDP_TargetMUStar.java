@@ -17,13 +17,14 @@ public class OSSCDP_TargetMUStar extends
 	}
 	
 	
-	public int[] bid(InformationState s)
+	public double[] bid(InformationState s)
 	{
+		/*
 		int[] newBid = new int[NUM_GOODS];
 		int[] singleGoodValue = new int[NUM_GOODS];
 		int[] priceToBid = new int[NUM_GOODS];
-		int noPredCount = 0;
-		
+		int noPredCount = 0;*/
+		/*
 		for (int i=0;i<NUM_GOODS;i++)
 		{
 			for (BitSet bs : bitVector)
@@ -72,14 +73,15 @@ public class OSSCDP_TargetMUStar extends
 				else newBid[i] = 0;
 			}
 		}
-		else
+		else*/
+		//{
+		double[] newBid = sampleMV();
+		/*
+		for (int i=0;i<NUM_GOODS;i++)
 		{
-			double[] sampleBid = sampleMV();
-			for (int i=0;i<NUM_GOODS;i++)
-			{
-				newBid[i] = (int)Math.round(sampleBid[i]);
-			}
-		}
+			newBid[i] = (int)Math.round(sampleBid[i]);
+		}*/
+		//}
 		return newBid;
 	}
 	
@@ -184,7 +186,8 @@ public class OSSCDP_TargetMUStar extends
 			} // end for
 			
 			double margVal = max_free_surplus - max_unavail_surplus;
-			mv[i] = margVal > 0 ? (int)Math.round(margVal) : 0;
+			margVal = (margVal > 0) ? margVal : 0;
+			mv[i] = margVal;
 		}
 		
 		for (int i=0;i<NUM_GOODS;i++)

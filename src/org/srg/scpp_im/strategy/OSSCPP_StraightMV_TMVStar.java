@@ -7,22 +7,28 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.BitSet;
 
-public class OneShotSelfConfirmingPricePredictionStraightMV extends SelfConfirmingPricePrediction {
+public class OSSCPP_StraightMV_TMVStar extends SelfConfirmingPricePrediction {
 	
 	private static final long serialVersionUID = 100L;
 	
-	public OneShotSelfConfirmingPricePredictionStraightMV(int index)
+	public OSSCPP_StraightMV_TMVStar(int index)
 	{
 		super(index);
 	}
 	
-	public int[] bid(InformationState s)
+	public String getPPName()
 	{
-		int[] newBid = new int[NUM_GOODS];
-		int[] singleGoodValue = new int[NUM_GOODS];
-		int[] priceToBid = new int[NUM_GOODS];
-		int noPredCount = 0;
+		return "OSSCPP_TargetMVStar";
+	}
+	
+	public double[] bid(InformationState s)
+	{
+		double[] newBid = new double[NUM_GOODS];
+		//int[] singleGoodValue = new int[NUM_GOODS];
+		//int[] priceToBid = new int[NUM_GOODS];
+		//int noPredCount = 0;
 		
+		/*
 		for (int i=0;i<NUM_GOODS;i++)
 		{
 			for (BitSet bs : bitVector)
@@ -79,7 +85,7 @@ public class OneShotSelfConfirmingPricePredictionStraightMV extends SelfConfirmi
 				else newBid[i] = 0;
 			}
 		}
-		else
+		else*/
 		{
 			for (int i=0;i<NUM_GOODS;i++)
 			{
@@ -118,7 +124,8 @@ public class OneShotSelfConfirmingPricePredictionStraightMV extends SelfConfirmi
 				} // end for
 				
 				double margVal = max_free_surplus - max_unavail_surplus;
-				newBid[i] = (int)Math.round((margVal));// + this.pricePrediction[i])/2.0);
+				margVal = (margVal > 0) ? margVal : 0;
+				newBid[i] = margVal;// + this.pricePrediction[i])/2.0);
 			}
 		}
 		
