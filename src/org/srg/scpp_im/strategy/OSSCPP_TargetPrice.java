@@ -16,9 +16,9 @@ public class OSSCPP_TargetPrice extends SelfConfirmingPricePrediction {
 		super(index);
 	}
 	
-	public int[] bid(InformationState s)
+	public double[] bid(InformationState s)
 	{
-		int[] newBid = new int[NUM_GOODS];
+		double[] newBid = new double[NUM_GOODS];
 		int[] singleGoodValue = new int[NUM_GOODS];
 		int[] priceToBid = new int[NUM_GOODS];
 		int noPredCount = 0;

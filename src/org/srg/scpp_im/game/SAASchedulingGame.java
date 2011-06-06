@@ -260,7 +260,7 @@ public class SAASchedulingGame extends GameSetting implements Register {
 	private void run()
 	{
 		//ArrayList<int[]> bids = new ArrayList<int[]>();
-		int[][] bids = new int[NUM_AGENT][NUM_GOODS];
+		double[][] bids = new double[NUM_AGENT][NUM_GOODS];
 		// testing a single SAA
 		boolean isQuiescent = false;
 
@@ -268,13 +268,13 @@ public class SAASchedulingGame extends GameSetting implements Register {
 		while (!isQuiescent)
 		{
 			// Supply current information state to users
-			int[] currentBids = state.getCurrentBidPrice();
+			double[] currentBids = state.getCurrentBidPrice();
 			int[] currentWinning = state.getCurrentBidWinning();
 
 			for (int i=0;i<NUM_AGENT;i++)
 			{
 				Strategy s = strategies.get(i);
-				int[] newbid = s.bid(state);
+				double[] newbid = s.bid(state);
 				
 				//System.out.print("Agent " + s.getIndex() + " bids: ");
 				for (int j=0;j<NUM_GOODS;j++)
@@ -287,7 +287,7 @@ public class SAASchedulingGame extends GameSetting implements Register {
 			isQuiescent = true;
 			for (int i=0;i<NUM_GOODS;i++)
 			{
-				int max = currentBids[i];
+				double max = currentBids[i];
 				//int agentWon = 0;
 				for (int j=0; j<NUM_AGENT;j++)
 				{
@@ -339,7 +339,7 @@ public class SAASchedulingGame extends GameSetting implements Register {
 			s.addObservation(state);
 		}
 		
-		int[] currentBids = state.getCurrentBidPrice();
+		double[] currentBids = state.getCurrentBidPrice();
 		int[] currentWinning = state.getCurrentBidWinning();
 		for (int i=0;i<NUM_GOODS;i++)
 		{

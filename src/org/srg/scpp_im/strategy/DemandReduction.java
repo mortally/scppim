@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.BitSet;
 
-public class DemandReduction extends GameSetting implements Serializable, Strategy {
+public class DemandReduction extends GameSetting implements Serializable {//, Strategy {
 
 	private static final long serialVersionUID = 100L;
 	private static final int KAPPA = 5;
@@ -58,7 +58,7 @@ public class DemandReduction extends GameSetting implements Serializable, Strate
 	
 	public int getCurrentSurplus(InformationState s)
 	{
-		int[] currentBid = s.getCurrentBidPrice();
+		double[] currentBid = s.getCurrentBidPrice();
 		int[] currentWinning = s.getCurrentBidWinning();
 		
 		BitSet bs = new BitSet();
@@ -100,14 +100,14 @@ public class DemandReduction extends GameSetting implements Serializable, Strate
 		return;
 	}
 	
-	public int[] bid(InformationState s)
+	public double[] bid(InformationState s)
 	{
-		int[] newBid = new int[NUM_GOODS];
+		double[] newBid = new double[NUM_GOODS];
 		int[] rank = new int[NUM_GOODS];
-		int[] currentBid = s.getCurrentBidPrice();
-		int[] sortedPrice = new int[NUM_GOODS];
+		double[] currentBid = s.getCurrentBidPrice();
+		double[] sortedPrice = new double[NUM_GOODS];
 		int[] currentWinning = s.getCurrentBidWinning();
-		int[] currentPrediction = new int[NUM_GOODS];
+		double[] currentPrediction = new double[NUM_GOODS];
 		
 		for (int i=0;i<NUM_GOODS;i++)
 		{

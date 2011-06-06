@@ -121,6 +121,12 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 	{
 		return typeDist;
 	}
+	
+	public void setTypeDist(Map<BitSet, Integer> typeDist, int length, int[] deadlineValues)
+	{
+		
+	}
+	
 	public void printPrediction()
 	{
 		System.out.print("Agent " + index + "'s PP: ");

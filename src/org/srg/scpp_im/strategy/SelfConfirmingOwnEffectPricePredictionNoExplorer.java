@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.BitSet;
 
 
-public class SelfConfirmingOwnEffectPricePredictionNoExplorer extends GameSetting implements Serializable, Strategy {
+public class SelfConfirmingOwnEffectPricePredictionNoExplorer extends GameSetting implements Serializable {//, Strategy {
 
 	private static final long serialVersionUID = 100L;
 	private static final int BETA = 127;
@@ -97,7 +97,7 @@ public class SelfConfirmingOwnEffectPricePredictionNoExplorer extends GameSettin
 	
 	public int getCurrentSurplus(InformationState s)
 	{
-		int[] currentBid = s.getCurrentBidPrice();
+		double[] currentBid = s.getCurrentBidPrice();
 		int[] currentWinning = s.getCurrentBidWinning();
 		
 		BitSet bs = new BitSet();
@@ -185,7 +185,7 @@ public class SelfConfirmingOwnEffectPricePredictionNoExplorer extends GameSettin
 	}
 	public void addObservation(InformationState s)
 	{
-		int[] finalPrice = s.getCurrentBidPrice();
+		double[] finalPrice = s.getCurrentBidPrice();
 		int[] finalWinner = s.getCurrentBidWinning();
 		int numWin = 0;
 		for (int i=0;i<NUM_GOODS;i++)
@@ -205,10 +205,10 @@ public class SelfConfirmingOwnEffectPricePredictionNoExplorer extends GameSettin
 		}
 	}
 	
-	public int[] bid(InformationState s)
+	public double[] bid(InformationState s)
 	{
-		int[] newBid = new int[NUM_GOODS];
-		int[] currentBid = s.getCurrentBidPrice();
+		double[] newBid = new double[NUM_GOODS];
+		double[] currentBid = s.getCurrentBidPrice();
 		int[] currentWinning = s.getCurrentBidWinning();
 		double[] currentPrediction = new double[NUM_GOODS];
 		int unitsToBuy = 0;
