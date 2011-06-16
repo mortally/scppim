@@ -9,24 +9,56 @@ import java.util.Map;
 import java.util.BitSet;
 
 
+// TODO: Auto-generated Javadoc
+/**
+ * The Class SelfConfirmingOwnEffectPricePredictionNoExplorer.
+ */
 public class SelfConfirmingOwnEffectPricePredictionNoExplorer extends GameSetting implements Serializable {//, Strategy {
 
+	/** The Constant serialVersionUID. */
 	private static final long serialVersionUID = 100L;
+	
+	/** The Constant BETA. */
 	private static final int BETA = 127;
 	
+	/** The index. */
 	private int index;
+	
+	/** The batch count. */
 	private int batchCount;
+	
+	/** The last units to buy. */
 	private int lastUnitsToBuy;
+	
+	/** The is single unit demand. */
 	private boolean isSingleUnitDemand;
 	//private boolean isExplorer;
+	/** The type dist. */
 	private Map<BitSet, Integer> typeDist;
+	
+	/** The cumulative val. */
 	private int[] cumulativeVal;
+	
+	/** The prediction matrix. */
 	private double[][] predictionMatrix;
+	
+	/** The prev prediction matrix. */
 	private double[][] prevPredictionMatrix;
+	
+	/** The price observation. */
 	private double[][] priceObservation;
+	
+	/** The observation count. */
 	private int[] observationCount;
+	
+	/** The bit vector. */
 	private BitSet[] bitVector;
 	
+	/**
+	 * Instantiates a new self confirming own effect price prediction no explorer.
+	 *
+	 * @param index the index
+	 */
 	public SelfConfirmingOwnEffectPricePredictionNoExplorer(int index)
 	{
 		this.index = index;
@@ -69,14 +101,31 @@ public class SelfConfirmingOwnEffectPricePredictionNoExplorer extends GameSettin
 		}
 	}
 	
+	/**
+	 * Gets the index.
+	 *
+	 * @return the index
+	 */
 	public int getIndex()
 	{
 		return index;
 	}
+	
+	/**
+	 * Gets the type dist.
+	 *
+	 * @return the type dist
+	 */
 	public Map<BitSet, Integer> getTypeDist()
 	{
 		return typeDist;
 	}
+	
+	/**
+	 * Sets the type dist.
+	 *
+	 * @param typeDist the type dist
+	 */
 	public void setTypeDist(Map<BitSet, Integer> typeDist)
 	{
 		this.typeDist = typeDist;
@@ -90,11 +139,24 @@ public class SelfConfirmingOwnEffectPricePredictionNoExplorer extends GameSettin
 			}
 		}
 	}
+	
+	/**
+	 * Sets the price prediction.
+	 *
+	 * @param <T> the generic type
+	 * @param pp the new price prediction
+	 */
 	public <T>void setPricePrediction(T pp)
 	{
 		this.predictionMatrix = (double[][])pp;
 	}
 	
+	/**
+	 * Gets the current surplus.
+	 *
+	 * @param s the s
+	 * @return the current surplus
+	 */
 	public int getCurrentSurplus(InformationState s)
 	{
 		double[] currentBid = s.getCurrentBidPrice();
@@ -114,6 +176,10 @@ public class SelfConfirmingOwnEffectPricePredictionNoExplorer extends GameSettin
 		value = typeDist.get(bs) != null ? typeDist.get(bs).intValue() : 0;
 		return (value - cost);
 	}
+	
+	/**
+	 * Prints the prediction.
+	 */
 	public void printPrediction()
 	{
 		for (int i=0;i<NUM_GOODS;i++)
@@ -126,6 +192,10 @@ public class SelfConfirmingOwnEffectPricePredictionNoExplorer extends GameSettin
 		}
 		
 	}
+	
+	/**
+	 * Sets the new prediction.
+	 */
 	public void setNewPrediction()
 	{
 		//pricePrediction = priceObservation;
@@ -153,6 +223,10 @@ public class SelfConfirmingOwnEffectPricePredictionNoExplorer extends GameSettin
 			this.observationCount[i] = 0;
 		}
 	}
+	
+	/**
+	 * Reset observation.
+	 */
 	public void resetObservation()
 	{
 		for (int i=0;i<NUM_GOODS;i++)
@@ -167,6 +241,12 @@ public class SelfConfirmingOwnEffectPricePredictionNoExplorer extends GameSettin
 			this.observationCount[i] = 0;
 		}
 	}
+	
+	/**
+	 * Gets the max dist.
+	 *
+	 * @return the max dist
+	 */
 	public double getMaxDist()
 	{
 		double maxDist = 0;
@@ -183,6 +263,12 @@ public class SelfConfirmingOwnEffectPricePredictionNoExplorer extends GameSettin
 		}
 		return maxDist;
 	}
+	
+	/**
+	 * Adds the observation.
+	 *
+	 * @param s the s
+	 */
 	public void addObservation(InformationState s)
 	{
 		double[] finalPrice = s.getCurrentBidPrice();
@@ -205,6 +291,12 @@ public class SelfConfirmingOwnEffectPricePredictionNoExplorer extends GameSettin
 		}
 	}
 	
+	/**
+	 * Bid.
+	 *
+	 * @param s the s
+	 * @return the double[]
+	 */
 	public double[] bid(InformationState s)
 	{
 		double[] newBid = new double[NUM_GOODS];
@@ -313,10 +405,20 @@ public class SelfConfirmingOwnEffectPricePredictionNoExplorer extends GameSettin
 		}
 		return newBid;
 	}
+	
+	/**
+	 * Checks if is single unit demand.
+	 *
+	 * @return true, if is single unit demand
+	 */
 	public boolean isSingleUnitDemand()
 	{
 		return this.isSingleUnitDemand;
 	}
+	
+	/**
+	 * Check single demand.
+	 */
 	private void checkSingleDemand()
 	{
 		int[] singleValue = new int[NUM_GOODS];

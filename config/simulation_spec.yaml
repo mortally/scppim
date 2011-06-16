@@ -1,28 +1,30 @@
 ---
-- SEQ_MDPOptimalV2
-- SEQ_MDPOptimal
-- SEQ_MDPOptimalV2
-- SEQ_MDPOptimalV2
+- OSSCDP_BidEvaluatorSMU
+- OSSCDP_BidEvaluatorSMU_E4S32K8
+- OSSCDP_SAASMU
+- OSSCDP_SAASMU
 ---
 size: 5.0
 name: U[5,5]
 description: ""
-game type: "SecondPriceSequentialMarketScheduling"
-dist type: "Manual"
-num goods: 3
-num agents: 2
+game type: "SecondPriceOneShotMarketScheduling"
+dist type: "Original"
+num goods: 5
+num players: 4
 num iterations: 1
-num simulations: 1
+num simulations: 100
 num sample: 8
 num scenario: 32
 num candidate bid: 4
 num dist mix: 5
-hierarchical reduction level: 1
+hierarchical reduction level: 2
 value upper bound: 50
-print debug: "true"
-print output: "true"
+print debug: "false"
+print output: "false"
 enable analyzer: "false"
-profile based: "true"
+profile based: "false"
+highest bid prediction: "false"
+random initial prediction: "false"  
 update threshold: 0.5
 min point dist to terminate: 0.001
 min distribution dist to terminate: 0.01

@@ -6,9 +6,17 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
+/**
+ * The experimental GameRunner class -- does not work.
+ */
 public class GameRunner {
 	//SAAGameEngine engine = new SAAGameEngine();
 	
+	/**
+	 * The main method.
+	 *
+	 * @param args the arguments
+	 */
 	public static void main(String[] args)
 	{
 		if (System.getSecurityManager() == null) 

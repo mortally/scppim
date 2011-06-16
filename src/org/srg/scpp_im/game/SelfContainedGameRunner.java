@@ -12,35 +12,70 @@ import java.util.List;
 import java.util.LinkedHashMap;
 import java.io.*;
 
-//import javax.xml.parsers.DocumentBuilder;
-//import javax.xml.parsers.DocumentBuilderFactory;
-//import javax.xml.parsers.ParserConfigurationException;
-//import org.w3c.dom.Document;
-//import org.w3c.dom.Element;
-//import org.w3c.dom.NodeList;
-//import org.xml.sax.SAXException;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 import org.yaml.snakeyaml.*;
 
 import lpsolve.*;
 
+/**
+ * The class that runs simulations in a self-contained way by linking 
+ * between the game class and strategies.
+ * @author Dong Young Yoon
+ */
 public class SelfContainedGameRunner extends GameSetting {
 	
 	//protected static Document dom;
+	/** The name of a game. */
 	protected static String game;
-	protected static String stratToTrain = "";
-	protected static String stratToProduce = "";
-	protected static boolean numAgentSpecified = false;
-	protected static ArrayList<Strategy> strategies;
-	protected static List<String> strNames;
-	protected static String mode;
-	protected static double[][] avgPrices;
-	protected static double[] avgPrice;
-	protected static BitSet[] bitVector;
 	
+	/** A user can specify which strategy to train its predicted price vector. */
+	protected static String stratToTrain = "";
+	
+	/** When specified, the simulator runs a game with a pure symmetric strategy. */  
+	protected static String stratToProduce = "";
+	
+	/** Check whether a number of agent(player) is specified by a user as command line arg. */
+	protected static boolean numAgentSpecified = false;
+	
+	/** Strategies for the game. */
+	protected static ArrayList<Strategy> strategies;
+	
+	/** List containing the names of strategies. */
+	protected static List<String> strNames;
+	
+	/** Mode of simulations: training or production. */
+	protected static String mode;
+	
+	/**
+	 * The main method.
+	 *
+	 * @param args the arguments
+	 */
 	public static void main(String[] args)
 	{
+		if (args.length < 2)
+		{
+			System.out.println("Usage: ");
+			System.out.println("	For training mode: SelfContainedGameRunner <simul_path> training [<strategy_to_train number_of_agents>]");
+			System.out.println("	For production mode: SelfContainedGameRunner <simul_path> production <number_of_samples>");
+			System.exit(-1);
+		}
+		
 		GameSetting.SIMUL_PATH = args[0];
 		mode = args.length > 1 ? args[1] : ""; 
+				
+		if (!mode.equalsIgnoreCase("production") && !mode.equalsIgnoreCase("training"))
+		{
+			System.out.println("ERROR: Mode argument must be either 'production' or 'training'");
+			System.exit(-1);
+		}
+				
 		
 		if (mode.equalsIgnoreCase("training") && args.length > 2)
 		{
@@ -48,8 +83,12 @@ public class SelfContainedGameRunner extends GameSetting {
 			{
 				stratToTrain = args[2];
 				numAgentSpecified = true;
-				GameSetting.NUM_AGENT = Integer.parseInt(args[3]); // This meaning that when there are more than 2 args
-				assert GameSetting.NUM_AGENT > 0;                 // User has to specified both strategy to be trained and # of agents
+				
+				// This meaning that when there are more than 2 args
+				// User has to specified both strategy to be trained and # of 
+				// agents
+				GameSetting.NUM_PLAYER = Integer.parseInt(args[3]); 
+				assert GameSetting.NUM_PLAYER > 0;                 
 			}
 			catch (Exception e)
 			{
@@ -58,12 +97,6 @@ public class SelfContainedGameRunner extends GameSetting {
 			}
 		}
 		
-		/*
-		if (mode.equalsIgnoreCase("training") && args.length > 3)
-		{
-			
-		}
-		*/
 		strategies = new ArrayList<Strategy>();
 		
 		if (!mode.equalsIgnoreCase("training") && args.length > 3) {
@@ -79,26 +112,6 @@ public class SelfContainedGameRunner extends GameSetting {
 			assert GameSetting.NUM_ITERATION > 0;
 		}
 		
-		bitVector = new BitSet[(int)Math.pow(2,NUM_GOODS)];
-		avgPrices = new double[NUM_ITERATION][NUM_GOODS];
-		avgPrice = new double[NUM_GOODS];
-		double[] maxDists = new double[NUM_ITERATION];
-		
-		for (int i=0;i<Math.pow(2, NUM_GOODS);i++)
-		{
-			BitSet bs = new BitSet();
-			String bits = Integer.toBinaryString(i);
-			bits = new StringBuffer(bits).reverse().toString();
-			for (int j=0;j<bits.length();j++)
-			{
-				char bitChar = bits.charAt(j);
-				String bitStr = String.valueOf(bitChar);
-				int bit = Integer.parseInt(bitStr);
-				if (bit == 1) bs.set(j, true);
-				else bs.set(j, false);
-			}
-			bitVector[i] = bs;
-		}
 		try
 		{
 			Class serverClass = Class.forName("org.srg.scpp_im.game." + game);
@@ -106,7 +119,6 @@ public class SelfContainedGameRunner extends GameSetting {
 			Register r;
 			if (args.length > 1)
 			{
-				//mode = args[1];
 				con = serverClass.getConstructor(int.class);
 				if (mode.equalsIgnoreCase("training"))
 				{
@@ -134,6 +146,11 @@ public class SelfContainedGameRunner extends GameSetting {
 		}
 	}
 	
+	/**
+	 * Parses the simulation_spec.yaml that is supplied by the EGTA testbed.
+	 *
+	 * @param file the yaml file containing simulation spec.
+	 */
 	protected static void parseSimulationSpecYAML(String file)
 	{
 		try
@@ -145,7 +162,8 @@ public class SelfContainedGameRunner extends GameSetting {
 			strNames = (List<String>)spec.next();
 			LinkedHashMap config = (LinkedHashMap)spec.next();
 			
-			if (!numAgentSpecified) GameSetting.NUM_AGENT = (int)Double.parseDouble(config.get("num agents").toString());
+			if (!numAgentSpecified) GameSetting.NUM_PLAYER = 
+				(int)Double.parseDouble(config.get("num players").toString());
 			
 			GameSetting.NUM_GOODS = (int)Double.parseDouble(config.get("num goods").toString());
 			assert GameSetting.NUM_GOODS > 0;
@@ -165,6 +183,8 @@ public class SelfContainedGameRunner extends GameSetting {
 			GameSetting.PRINT_OUTPUT = Boolean.parseBoolean(config.get("print output").toString());
 			GameSetting.PROFILE_BASED = Boolean.parseBoolean(config.get("profile based").toString());
 			GameSetting.ENABLE_ANALYZER = Boolean.parseBoolean(config.get("enable analyzer").toString());
+			GameSetting.HIGHEST_BID_PREDICTION = Boolean.parseBoolean(config.get("highest bid prediction").toString());
+			GameSetting.RANDOM_INITIAL_PREDICTION = Boolean.parseBoolean(config.get("random initial prediction").toString());
 			GameSetting.UPDATE_THRESHOLD = Double.parseDouble(config.get("update threshold").toString());
 			GameSetting.VALUE_UPPER_BOUND = (int)Double.parseDouble(config.get("value upper bound").toString());
 			assert GameSetting.VALUE_UPPER_BOUND > 0;
@@ -180,7 +200,7 @@ public class SelfContainedGameRunner extends GameSetting {
 			assert !GameSetting.GAME_TYPE.isEmpty();
 			assert !GameSetting.DIST_TYPE.isEmpty();
 			
-			if (!mode.equalsIgnoreCase("training") && GameSetting.NUM_AGENT != strNames.size())
+			if (!mode.equalsIgnoreCase("training") && GameSetting.NUM_PLAYER != strNames.size())
 			{
 				System.out.println("Invalid YAML file: Number of agents mismatch");
 		    	System.exit(-1);
@@ -191,9 +211,10 @@ public class SelfContainedGameRunner extends GameSetting {
 				if (!PROFILE_BASED) GameSetting.HIERARCHICAL_REDUCTION_LEVEL = 1;
 			}
 			
-			GameSetting.TOTAL_AGENTS = NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;
+			GameSetting.TOTAL_AGENTS = NUM_PLAYER * HIERARCHICAL_REDUCTION_LEVEL;
+			GameSetting.NUM_AGENT = NUM_PLAYER * HIERARCHICAL_REDUCTION_LEVEL;
 			
-			for (int i=0;i<NUM_AGENT;i++)
+			for (int i=0;i<NUM_PLAYER;i++)
 		    {
 				String strategyName = "";
 				if (!mode.equalsIgnoreCase("training")) 
@@ -212,20 +233,12 @@ public class SelfContainedGameRunner extends GameSetting {
 
 		    	Class agentClass = Class.forName(strategyName);
 		    	Constructor con = agentClass.getConstructor(int.class);
-		    	/*
-		    	if (mode.equalsIgnoreCase("training"))
-		    	{
-		    		Strategy s = (Strategy)con.newInstance(i+1);
-		    		strategies.add(s);
-		    	}
-		    	else*/ 
-		    	{
-		    		for (int j=0;j<HIERARCHICAL_REDUCTION_LEVEL;j++)
-		    		{
-		    			Strategy s = (Strategy)con.newInstance(i * HIERARCHICAL_REDUCTION_LEVEL + j + 1);
-		    			strategies.add(s);
-		    		}
-		    	}
+
+		    	for (int j=0;j<HIERARCHICAL_REDUCTION_LEVEL;j++)
+	    		{
+	    			Strategy s = (Strategy)con.newInstance(i * HIERARCHICAL_REDUCTION_LEVEL + j + 1);
+	    			strategies.add(s);
+	    		}
 		    }
 		}
 		catch (Exception e)
@@ -233,11 +246,20 @@ public class SelfContainedGameRunner extends GameSetting {
 			e.printStackTrace();
 		}
 	}
-	/*
+	
+	
+	/**
+	 * Parses the xml file that specifies the configuration of a game.
+	 * this method is now deprecated and no longer maintained, but left
+	 * for the future uses just in case.
+	 *
+	 * @param file the configuration file
+	 * @deprecated
+	 */
 	protected static void parseGameSettingXML(String file)
 	{
 		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-		
+		Document dom = null;
 		try
 		{
 			DocumentBuilder db = dbf.newDocumentBuilder();
@@ -299,5 +321,5 @@ public class SelfContainedGameRunner extends GameSetting {
 	    		e.printStackTrace();
 	    	}
 	    }
-	}*/
+	}
 }

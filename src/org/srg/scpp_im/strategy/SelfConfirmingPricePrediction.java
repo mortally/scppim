@@ -15,6 +15,7 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 	protected static final long serialVersionUID = 100L;
 
 	protected int index;
+	protected int jobLength;
 	//private int[] typeDist;
 	protected Map<BitSet, Integer> typeDist;
 	protected boolean isSingleUnitDemand;
@@ -124,7 +125,8 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 	
 	public void setTypeDist(Map<BitSet, Integer> typeDist, int length, int[] deadlineValues)
 	{
-		
+		this.jobLength = length;
+		this.setTypeDist(typeDist);
 	}
 	
 	public void printPrediction()

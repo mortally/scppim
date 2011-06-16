@@ -15,6 +15,9 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 	
 	protected int index;
 	protected int jobLength;
+	protected int NUM_SAMPLE;
+	protected int NUM_SCENARIO;
+	protected int NUM_CANDIDATE_BID;
 	protected boolean isSingleUnitDemand;
 	protected boolean isPricePredicting = false;
 	protected Map<BitSet, Integer> typeDist;
@@ -35,6 +38,9 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		this.index = index;
 		this.observationCount = 0;
 		this.isSingleUnitDemand = true;
+		this.NUM_SAMPLE = GameSetting.NUM_SAMPLE;
+		this.NUM_SCENARIO = GameSetting.NUM_SCENARIO;
+		this.NUM_CANDIDATE_BID = GameSetting.NUM_CANDIDATE_BID;
 		prevPrediction = new double[NUM_GOODS][VALUE_UPPER_BOUND+1];
 		pricePrediction = new double[NUM_GOODS][VALUE_UPPER_BOUND+1];
 		priceObservation = new double[NUM_GOODS][VALUE_UPPER_BOUND+1];

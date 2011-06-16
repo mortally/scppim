@@ -7,6 +7,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 
+/**
+ * Simultaneous ascending auction game for market scheduling.
+ */
 public class SAASchedulingGame extends GameSetting implements Register {
 
 	/*
@@ -14,13 +17,24 @@ public class SAASchedulingGame extends GameSetting implements Register {
 	private static int NUM_GOODS = 3;
 	private static long NUM_SIMULATION = 1000000;
 	private static int VALUE_UPPER_BOUND = 50;*/
+	/** The strategies. */
 	private ArrayList<Strategy> strategies;
 	
+	/** The number of agents received. */
 	private int numAgentsReceived;
+	
+	/** The average price. */
 	private double[] avgPrice;
+	
+	/** The price prediction vector. */
 	private int[] pp;
+	
+	/** The bit vector. */
 	private BitSet[] bitVector;
 	
+	/**
+	 * Instantiates a new SAA market scheduling game.
+	 */
 	public SAASchedulingGame()
 	{
 		numAgentsReceived = 0;
@@ -45,6 +59,11 @@ public class SAASchedulingGame extends GameSetting implements Register {
 		}
 	}
 	
+	/** 
+	 * Register an agent for participation in the SAA game. Once the correct
+	 * number of agents is registered, the game commences.
+	 * @see org.srg.scpp_im.game.Register#register(org.srg.scpp_im.game.Strategy)
+	 */
 	public void register(Strategy s)
 	{
 		if (numAgentsReceived == NUM_AGENT) return;
@@ -138,6 +157,12 @@ public class SAASchedulingGame extends GameSetting implements Register {
 		
 	}
 	
+	/**
+	 * Gets the maximum distance between previous and current price prediction
+	 * vectors.
+	 *
+	 * @return the maximum distance of price prediction vectors
+	 */
 	private double getMaxDist()
 	{
 		double max_dist = 0;
@@ -151,6 +176,9 @@ public class SAASchedulingGame extends GameSetting implements Register {
 		return max_dist;
 	}
 	
+	/**
+	 * Update price prediction.
+	 */
 	private void updatePricePrediction()
 	{
 		for (Strategy s : strategies)
@@ -159,6 +187,9 @@ public class SAASchedulingGame extends GameSetting implements Register {
 		}
 	}
 	
+	/**
+	 * Initializes the type distribution for agents.
+	 */
 	private void initTypeDist()
 	{
 		Random ran = new Random();
@@ -245,18 +276,10 @@ public class SAASchedulingGame extends GameSetting implements Register {
 		}
 		*/
 	}
-	private void initPricePrediction(Strategy s)
-	{
-		// initial prediction of strategies are zeros
-		/*
-		int[] newP = new int[NUM_GOODS];
-		Random r = new Random();
-		for (int i=0;i<NUM_GOODS;i++)
-		{
-			newP[i] = r.nextInt(47) + 3;
-		}
-		s.setPricePrediction(newP);*/
-	}
+
+	/**
+	 * Run the game.
+	 */
 	private void run()
 	{
 		//ArrayList<int[]> bids = new ArrayList<int[]>();

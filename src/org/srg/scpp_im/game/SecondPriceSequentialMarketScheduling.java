@@ -47,8 +47,7 @@ public class SecondPriceSequentialMarketScheduling extends SecondPriceOneShotGam
 	
 	public void register(Strategy s)
 	{
-		if (this.mode == GameSetting.TRAINING_MODE && numAgentsReceived == NUM_AGENT) return;
-		if (this.mode == GameSetting.PRODUCTION_MODE && numAgentsReceived == NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL) return;
+		if (numAgentsReceived == NUM_AGENT) return;
 		// get Strategy object here
 		
 		// temporary setting of initial dist
@@ -65,8 +64,7 @@ public class SecondPriceSequentialMarketScheduling extends SecondPriceOneShotGam
         System.out.println();
         */
 		numAgentsReceived++;
-		if ((this.mode == GameSetting.TRAINING_MODE && numAgentsReceived == NUM_AGENT) ||
-			(this.mode == GameSetting.PRODUCTION_MODE && numAgentsReceived == NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL)) 
+		if (numAgentsReceived == NUM_AGENT)  
 		{
 			double[][] avgPrices = new double[NUM_ITERATION][NUM_GOODS];
 			double[] maxDists = new double[NUM_ITERATION];
@@ -77,7 +75,7 @@ public class SecondPriceSequentialMarketScheduling extends SecondPriceOneShotGam
 				String path = pp_path + GameSetting.GAME_TYPE + "/" + GameSetting.DIST_TYPE + "/";
 				for (Strategy strat : strategies)
 				{
-					String filename = strat.getPPName()  + "_N" + (NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL) + "M" + NUM_GOODS + "V" + VALUE_UPPER_BOUND +  ".csv";
+					String filename = strat.getPPName()  + "_N" + NUM_AGENT + "M" + NUM_GOODS + "V" + VALUE_UPPER_BOUND +  ".csv";
 					File f = new File(path + filename);
 					if (!f.exists())
 					{
@@ -209,7 +207,7 @@ public class SecondPriceSequentialMarketScheduling extends SecondPriceOneShotGam
 						sumAvgValue += st.getAverageValue();
 						st.resetObservation();
 					}
-					//double avgValue = sumAvgValue / (NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL);
+					//double avgValue = sumAvgValue / (NUM_AGENT );
 					System.out.println("AvgOpt Total = " + avgOptValue + ", AvgVal Total = " + sumAvgValue);
 					System.out.println("Efficiency = " + (sumAvgValue / avgOptValue * 100) + "%");
 					//System.out.println((sumAvgValue / avgOptValue * 100));
@@ -332,7 +330,7 @@ public class SecondPriceSequentialMarketScheduling extends SecondPriceOneShotGam
 				}
 				System.out.println();
 				System.out.print("std. dev. of payoffs are: ");
-				for (int i=0;i<NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;i++)
+				for (int i=0;i<NUM_AGENT;i++)
 				{
 					this.averagePayoff[i] = this.averagePayoff[i] / (double)NUM_ITERATION; 
 					double SS = 0.0;
@@ -346,7 +344,7 @@ public class SecondPriceSequentialMarketScheduling extends SecondPriceOneShotGam
 				}
 				System.out.println();
 				System.out.println("Payoff records:");
-				for (int i=0;i<NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;i++)
+				for (int i=0;i<NUM_AGENT;i++)
 				{
 					for (int j=0;j<NUM_ITERATION;j++)
 					{
@@ -396,7 +394,7 @@ public class SecondPriceSequentialMarketScheduling extends SecondPriceOneShotGam
 	
 	protected void run()
 	{
-		int numAgents = NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;
+		int numAgents = NUM_AGENT;
 		double[] bids = new double[numAgents];
 		double[] finalPrice = new double[NUM_GOODS];
 		int[] finalWinner = new int[NUM_GOODS];
@@ -408,7 +406,7 @@ public class SecondPriceSequentialMarketScheduling extends SecondPriceOneShotGam
 		for (int i=0;i<NUM_GOODS;i++)
 		{
 			state.setRound(i);
-			for (int j=0;j<NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;j++)
+			for (int j=0;j<NUM_AGENT;j++)
 			{
 				Strategy s = strategies.get(j);
 				double[] newbid = s.bid(state);
@@ -457,7 +455,7 @@ public class SecondPriceSequentialMarketScheduling extends SecondPriceOneShotGam
 			ArrayList<Integer> winners = new ArrayList<Integer>();
 			int winner = 0;
 			
-			for (int j=0;j<NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;j++)
+			for (int j=0;j<NUM_AGENT ;j++)
 			{
 				if (bids[j] > 0 && bids[j] == topPrice)
 				{
@@ -507,10 +505,10 @@ public class SecondPriceSequentialMarketScheduling extends SecondPriceOneShotGam
 		System.out.println();
 		System.out.println();
 		*/
-		double[] curSurplus = new double[NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL];
+		double[] curSurplus = new double[NUM_AGENT];
 		if (ENABLE_ANALYZER || PRINT_DEBUG)
 		{
-			for (int i=0;i<NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;i++)
+			for (int i=0;i<NUM_AGENT;i++)
 			{
 				Strategy s = strategies.get(i);
 				//System.out.println("asdf");
@@ -519,7 +517,7 @@ public class SecondPriceSequentialMarketScheduling extends SecondPriceOneShotGam
 		}
 		if (ENABLE_ANALYZER) 
 		{
-			for (int i=0;i<NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;i++)
+			for (int i=0;i<NUM_AGENT;i++)
 			{
 				Strategy s = strategies.get(i);
 				analyzer.addUtility(s.getIndex(), curSurplus[i]);
@@ -555,7 +553,7 @@ public class SecondPriceSequentialMarketScheduling extends SecondPriceOneShotGam
 			}
 			System.out.println();
 			System.out.println("Utility of each agent: ");
-			for (int i=0;i<NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;i++)
+			for (int i=0;i<NUM_AGENT;i++)
 			{
 				Strategy s = strategies.get(i);
 				System.out.println(s.getIndex() + ": " + curSurplus[i]);
@@ -832,8 +830,7 @@ public class SecondPriceSequentialMarketScheduling extends SecondPriceOneShotGam
 	{
 		Random ran = new Random();
 		int numSets = (int)Math.pow(2, NUM_GOODS);
-		double[] values = new double[NUM_AGENT *
-		                               HIERARCHICAL_REDUCTION_LEVEL * numSets];
+		double[] values = new double[NUM_AGENT * numSets];
 		// single-unit demand for agent_1
 		//System.out.println(v_one + " " + v_i_upper_bound);
 		Iterator<Strategy> iter = strategies.iterator();
@@ -919,7 +916,7 @@ public class SecondPriceSequentialMarketScheduling extends SecondPriceOneShotGam
 		////////////////////////////////////////////////////////////////////////
 		
 		/*
-		int numVar = numSets * NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;
+		int numVar = numSets * NUM_AGENT ;
 		
 		try
 		{
@@ -934,7 +931,7 @@ public class SecondPriceSequentialMarketScheduling extends SecondPriceOneShotGam
 				solver.setBinary(i, true);
 			}
 			double[] constraint = new double[numVar];
-			for (int i=0;i<NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;i++)
+			for (int i=0;i<NUM_AGENT ;i++)
 			{
 				int count = 0;
 				constraint = new double[numVar];
@@ -956,7 +953,7 @@ public class SecondPriceSequentialMarketScheduling extends SecondPriceOneShotGam
 				constraint = new double[numVar];
 				colNo = new int[numSets];
 				row = new double[numSets];
-				for (int i=0;i<NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;i++)
+				for (int i=0;i<NUM_AGENT ;i++)
 				{
 					//colNo[count] = 1 + i * numSets + j;
 					//row[count] = 1;
@@ -972,15 +969,15 @@ public class SecondPriceSequentialMarketScheduling extends SecondPriceOneShotGam
 		
 			for (int i=0;i<NUM_GOODS;i++)
 			{
-				colNo = new int[numSets * NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL];
-				row = new double[numSets* NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL];
+				colNo = new int[numSets * NUM_AGENT ];
+				row = new double[numSets* NUM_AGENT ];
 				constraint = new double[numVar];
 				count = 0;
 				for (int j=0;j<bitVector.length;j++)
 				{
 					if (bitVector[j].get(i))
 					{
-						for (int k=0;k<NUM_AGENT * HIERARCHICAL_REDUCTION_LEVEL;k++)
+						for (int k=0;k<NUM_AGENT ;k++)
 						{
 							constraint[k * numSets + j] = 1;
 							//colNo[count] = 1 + k * numSets + j;
@@ -1035,8 +1032,7 @@ public class SecondPriceSequentialMarketScheduling extends SecondPriceOneShotGam
 	{
 		Random ran = new Random();
 		int numSets = (int)Math.pow(2, NUM_GOODS);
-		double[] values = new double[NUM_AGENT *
-		                               HIERARCHICAL_REDUCTION_LEVEL * numSets];
+		double[] values = new double[NUM_AGENT * numSets];
 		// single-unit demand for agent_1
 		//System.out.println(v_one + " " + v_i_upper_bound);
 		Iterator<Strategy> iter = strategies.iterator();
@@ -1106,8 +1102,6 @@ public class SecondPriceSequentialMarketScheduling extends SecondPriceOneShotGam
 			}
 		}
 	}
-	
-	
 	
 	private void initTypeDist()
 	{
