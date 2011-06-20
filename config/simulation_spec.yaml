@@ -1,8 +1,8 @@
 ---
 - OSSCDP_BidEvaluatorSMU
 - OSSCDP_BidEvaluatorSMU_E4S32K8
-- OSSCDP_SAASMU
-- OSSCDP_SAASMU
+- OSSCDP_BidEvaluatorSMU_E2S32K16
+- OSSCDP_BidEvaluatorSMU_E1S32K32
 ---
 size: 5.0
 name: U[5,5]
@@ -12,7 +12,7 @@ dist type: "Original"
 num goods: 5
 num players: 4
 num iterations: 1
-num simulations: 100
+num simulations: 1
 num sample: 8
 num scenario: 32
 num candidate bid: 4

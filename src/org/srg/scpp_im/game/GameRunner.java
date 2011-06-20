@@ -8,6 +8,7 @@ import java.rmi.server.UnicastRemoteObject;
 
 /**
  * The experimental GameRunner class -- does not work.
+ * @author Dong Young Yoon
  */
 public class GameRunner {
 	//SAAGameEngine engine = new SAAGameEngine();

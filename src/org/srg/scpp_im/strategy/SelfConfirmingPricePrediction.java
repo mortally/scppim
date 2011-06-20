@@ -10,36 +10,63 @@ import java.util.Map;
 import java.util.BitSet;
 import java.util.Random;
 
+/**
+ * The base class for point price prediction strategies
+ * @author Dong Young Yoon
+ */
 public class SelfConfirmingPricePrediction extends GameSetting implements Serializable, Strategy {
 	
+	/** The Constant serialVersionUID. */
 	protected static final long serialVersionUID = 100L;
 
+	/** The index of an agent. */
 	protected int index;
+	
+	/** The required job length. */
 	protected int jobLength;
-	//private int[] typeDist;
+	/** The type/value distribution. */
 	protected Map<BitSet, Integer> typeDist;
+	
+	/** The is single unit demand. */
 	protected boolean isSingleUnitDemand;
-	//private double[] pricePrediction;
+	/** The price prediction vector. */
 	protected double[] pricePrediction;
+	
+	/** The previous price prediction vector. */
 	protected double[] prevPrediction;
+	
+	/** The bit vector representing set of goods. */
 	protected BitSet[] bitVector;
 	
+	/** The observed price vector. */
 	protected double[] priceObservation = new double[NUM_GOODS];
+	
+	/** The utility record. */
 	protected double[] utilityRecord = new double[NUM_SIMULATION];
+	
+	/** The observation count. */
 	protected int observationCount = 0;
+	
+	/** The cumulated utility. */
 	protected double cumulatedUtility = 0;
+	
+	/** The cumulated value. */
 	protected double cumulatedValue = 0;
+	
+	/** The prediction type. */
 	protected final int prediction_type = POINT;
 	
+	/**
+	 * Instantiates a new agent with a point price prediction strategy.
+	 *
+	 * @param index the index of an agent
+	 */
 	public SelfConfirmingPricePrediction(int index)
 	{
 		this.index = index;
 		this.isSingleUnitDemand = true;
 		this.pricePrediction = new double[NUM_GOODS];
 		this.prevPrediction = new double[NUM_GOODS];
-		//temp
-		//this.pricePrediction[1] = 15;
-		//this.pricePrediction[0] = 14;
 		
 		bitVector = new BitSet[(int)Math.pow(2,NUM_GOODS)];
 		for (int i=0;i<Math.pow(2, NUM_GOODS);i++)
@@ -66,10 +93,14 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 				this.pricePrediction[i] = r.nextInt(VALUE_UPPER_BOUND+1);
 			}
 		}
-		//System.out.println("!!!!!!!!!!");
-		
 	}
 	
+	/**
+	 * Instantiates a new agent with a point price prediction strategy.
+	 *
+	 * @param index the index of an agent
+	 * @param typeDist the type/value distribution of an agent
+	 */
 	public SelfConfirmingPricePrediction(int index, Map<BitSet, Integer> typeDist)
 	{
 		this.index = index;
@@ -80,6 +111,13 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 		this.prevPrediction = new double[NUM_GOODS];
 	}
 	
+	/**
+	 * Instantiates a new agent with a point price prediction strategy.
+	 *
+	 * @param index the index
+	 * @param typeDist the type/value distribution of an agent
+	 * @param pp the price prediction vector
+	 */
 	public SelfConfirmingPricePrediction(int index, Map<BitSet, Integer> typeDist, double[] pp)
 	{
 		this.index = index;
@@ -90,10 +128,17 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 		this.prevPrediction = new double[NUM_GOODS];
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getIndex()
+	 */
 	public int getIndex()
 	{
 		return index;
 	}
+	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getName()
+	 */
 	public String getName()
 	{
 		String stratName = this.getClass().getName();
@@ -102,33 +147,51 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 		return stratName;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getPPName()
+	 */
 	public String getPPName()
 	{
 		return this.getName();
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getPredictionType()
+	 */
 	public int getPredictionType()
 	{
 		return this.prediction_type;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#setTypeDist(java.util.Map)
+	 */
 	public void setTypeDist(Map<BitSet, Integer> typeDist)
 	{
 		this.typeDist = typeDist;
 		this.checkSingleDemand();
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getTypeDist()
+	 */
 	public Map<BitSet, Integer> getTypeDist()
 	{
 		return typeDist;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#setTypeDist(java.util.Map, int, int[])
+	 */
 	public void setTypeDist(Map<BitSet, Integer> typeDist, int length, int[] deadlineValues)
 	{
 		this.jobLength = length;
 		this.setTypeDist(typeDist);
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#printPrediction()
+	 */
 	public void printPrediction()
 	{
 		System.out.print("Agent " + index + "'s PP: ");
@@ -139,17 +202,28 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 		System.out.println();
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#setPricePrediction(java.lang.Object)
+	 */
 	public <T>void setPricePrediction(T pp)
 	{
 		this.prevPrediction = this.pricePrediction;
 		this.pricePrediction = (double[])pp;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getPricePrediction()
+	 */
 	public double[] getPricePrediction()
 	{
 		return this.pricePrediction;
 	}
 	
+	/**
+	 * Read price prediction from a file.
+	 *
+	 * @param file the file
+	 */
 	public void readPricePrediction(String file)
 	{
 		try
@@ -170,16 +244,25 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 			
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getAverageUtility()
+	 */
 	public double getAverageUtility()
 	{
 		return (double)this.cumulatedUtility / (double)this.observationCount;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getAverageValue()
+	 */
 	public double getAverageValue()
 	{
 		return this.cumulatedValue / (double)this.observationCount;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getCurrentSurplus(org.srg.scpp_im.game.InformationState)
+	 */
 	public double getCurrentSurplus(InformationState s)
 	{
 		double[] currentBid = s.getCurrentBidPrice();
@@ -203,10 +286,18 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 		//cumulatedUtility += utility;
 		return utility;
 	}
+	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getUtilityRecord()
+	 */
 	public double[] getUtilityRecord()
 	{
 		return this.utilityRecord;
 	}
+	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#addObservation(org.srg.scpp_im.game.InformationState)
+	 */
 	public void addObservation(InformationState s)
 	{
 		double[] finalPrice;
@@ -221,6 +312,9 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 		this.observationCount++;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getMaxDist()
+	 */
 	public double getMaxDist()
 	{
 		double max_dist = 0;
@@ -237,6 +331,9 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 		return max_dist;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getMaxDist(double[][])
+	 */
 	public double getMaxDist(double pp[][])
 	{
 		double max_dist = 0;
@@ -258,6 +355,9 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 		return max_dist;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#setNewPrediction()
+	 */
 	public void setNewPrediction()
 	{
 		//this.prevPrediction = this.pricePrediction;
@@ -271,6 +371,9 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 		this.observationCount = 0;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#setNewPredictionAverage(int)
+	 */
 	public void setNewPredictionAverage(int currentIt)
 	{
 		for (int i=0;i<NUM_GOODS;i++)
@@ -287,6 +390,9 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 		this.observationCount = 0;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#resetObservation()
+	 */
 	public void resetObservation()
 	{
 		for (int i=0;i<NUM_GOODS;i++)
@@ -298,6 +404,9 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 		this.cumulatedUtility = 0;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#bid(org.srg.scpp_im.game.InformationState)
+	 */
 	public double[] bid(InformationState s)
 	{
 		double[] newBid = new double[NUM_GOODS];
@@ -367,10 +476,18 @@ public class SelfConfirmingPricePrediction extends GameSetting implements Serial
 		}
 		return newBid;
 	}
+	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#isSingleUnitDemand()
+	 */
 	public boolean isSingleUnitDemand()
 	{
 		return this.isSingleUnitDemand;
 	}
+	
+	/**
+	 * Check if an agent has a single-unit demand.
+	 */
 	protected void checkSingleDemand()
 	{
 		int[] singleValue = new int[NUM_GOODS];

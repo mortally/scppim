@@ -24,6 +24,7 @@ public class OSSCDP_BidEvaluatorSMU extends
 
 	public double[] bid(InformationState s)
 	{
+		//System.out.println(NUM_SAMPLE + " " + NUM_SCENARIO + " " + NUM_CANDIDATE_BID);
 		double[] newBid = sampleMV();
 	
 		return newBid;

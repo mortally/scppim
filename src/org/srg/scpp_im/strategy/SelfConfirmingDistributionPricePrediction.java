@@ -8,31 +8,76 @@ import java.util.Map;
 import java.util.BitSet;
 import java.util.Random;
 
+/**
+ * The 
+ */
 public class SelfConfirmingDistributionPricePrediction extends GameSetting implements Serializable, Strategy {
 
+	/** The Constant serialVersionUID. */
 	private static final long serialVersionUID = 100L;
+	
+	/** The Constant BETA. */
 	protected static final int BETA = 50;
 	
+	/** The index. */
 	protected int index;
+	
+	/** The job length. */
 	protected int jobLength;
+	
+	/** The NU m_ sample. */
 	protected int NUM_SAMPLE;
+	
+	/** The NU m_ scenario. */
 	protected int NUM_SCENARIO;
+	
+	/** The NU m_ candidat e_ bid. */
 	protected int NUM_CANDIDATE_BID;
+	
+	/** The is single unit demand. */
 	protected boolean isSingleUnitDemand;
+	
+	/** The is price predicting. */
 	protected boolean isPricePredicting = false;
+	
+	/** The type dist. */
 	protected Map<BitSet, Integer> typeDist;
+	
+	/** The price prediction. */
 	protected double[][] pricePrediction;
+	
+	/** The prev prediction. */
 	protected double[][] prevPrediction;
+	
+	/** The price observation. */
 	protected double[][] priceObservation;
+	
+	/** The cumul prediction. */
 	protected double[][] cumulPrediction;
+	
+	/** The utility record. */
 	protected double[] utilityRecord = new double[NUM_SIMULATION];
+	
+	/** The observation count. */
 	protected int observationCount;
+	
+	/** The cumulated utility. */
 	protected double cumulatedUtility = 0.0;
+	
+	/** The cumulated value. */
 	protected double cumulatedValue = 0.0;
+	
+	/** The bit vector. */
 	protected BitSet[] bitVector;
 	
+	/** The prediction_type. */
 	protected int prediction_type = DISTRIBUTION;
 	
+	/**
+	 * Instantiates a new self confirming distribution price prediction.
+	 *
+	 * @param index the index
+	 */
 	public SelfConfirmingDistributionPricePrediction(int index)
 	{
 		this.index = index;
@@ -86,10 +131,17 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		}
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getIndex()
+	 */
 	public int getIndex()
 	{
 		return index;
 	}
+	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getName()
+	 */
 	public String getName()
 	{
 		String stratName = this.getClass().getName();
@@ -97,29 +149,53 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		if (firstChar > 0) stratName = stratName.substring(firstChar);
 		return stratName;
 	}
+	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getPPName()
+	 */
 	public String getPPName()
 	{
 		return this.getName();
 	}
+	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getPredictionType()
+	 */
 	public int getPredictionType()
 	{
 		return this.prediction_type;
 	}
+	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getTypeDist()
+	 */
 	public Map<BitSet, Integer> getTypeDist()
 	{
 		return typeDist;
 	}
+	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#setTypeDist(java.util.Map)
+	 */
 	public void setTypeDist(Map<BitSet, Integer> typeDist)
 	{
 		this.typeDist = typeDist;
 		this.checkSingleDemand();
 	}
+	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#setTypeDist(java.util.Map, int, int[])
+	 */
 	public void setTypeDist(Map<BitSet, Integer> typeDist, int length, int[] deadlineValues)
 	{
 		this.typeDist = typeDist;
 		this.checkSingleDemand();
 		this.jobLength = length;
 	}
+	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#setPricePrediction(java.lang.Object)
+	 */
 	public <T>void setPricePrediction(T pp)
 	{
 		double[][] newPP = (double[][])pp;
@@ -144,24 +220,41 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		}
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getPricePrediction()
+	 */
 	public double[][] getPricePrediction()
 	{
 		return this.pricePrediction;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getAverageUtility()
+	 */
 	public double getAverageUtility()
 	{
 		return (double)this.cumulatedUtility / (double)this.observationCount;
 	}
+	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getAverageValue()
+	 */
 	public double getAverageValue()
 	{
 		return this.cumulatedValue / (double)this.observationCount;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getUtilityRecord()
+	 */
 	public double[] getUtilityRecord()
 	{
 		return this.utilityRecord;
 	}
+	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getCurrentSurplus(org.srg.scpp_im.game.InformationState)
+	 */
 	public double getCurrentSurplus(InformationState s)
 	{
 		double[] currentBid = s.getCurrentBidPrice();
@@ -186,6 +279,10 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		this.utilityRecord[this.observationCount] = utility;
 		return utility;
 	}
+	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#printPrediction()
+	 */
 	public void printPrediction()
 	{
 		for (int i=0;i<NUM_GOODS;i++)
@@ -198,6 +295,10 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		}
 		
 	}
+	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#setNewPrediction()
+	 */
 	public void setNewPrediction()
 	{
 		//pricePrediction = priceObservation;
@@ -224,6 +325,9 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		//buildCumulativeDist();
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#setNewPredictionAverage(int)
+	 */
 	public void setNewPredictionAverage(int currentIt)
 	{
 		for (int i=0;i<NUM_GOODS;i++)
@@ -250,6 +354,9 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		this.isPricePredicting = true;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#resetObservation()
+	 */
 	public void resetObservation()
 	{
 		for (int i=0;i<NUM_GOODS;i++)
@@ -264,6 +371,9 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		this.cumulatedUtility = 0;
 	}
 	
+	/**
+	 * Builds the cumulative dist.
+	 */
 	private void buildCumulativeDist()
 	{
 		for (int i=0;i<NUM_GOODS;i++)
@@ -280,6 +390,9 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		}
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getMaxDist()
+	 */
 	public double getMaxDist()
 	{
 		double maxDist = 0;
@@ -303,6 +416,9 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		return maxDist;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#getMaxDist(double[][])
+	 */
 	public double getMaxDist(double[][] pp)
 	{
 		double maxDist = 0;
@@ -336,6 +452,12 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		return maxDist;
 	}
 	
+	/**
+	 * Adds the value.
+	 *
+	 * @param s the s
+	 * @return the double
+	 */
 	private double addValue(InformationState s)
 	{
 		int[] currentWinning = s.getCurrentBidWinning();
@@ -354,6 +476,9 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		return value;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#addObservation(org.srg.scpp_im.game.InformationState)
+	 */
 	public void addObservation(InformationState s)
 	{
 		if (HIGHEST_BID_PREDICTION)
@@ -385,6 +510,9 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		this.observationCount++;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#bid(org.srg.scpp_im.game.InformationState)
+	 */
 	public double[] bid(InformationState s)
 	{
 		
@@ -489,10 +617,18 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		}
 		return newBid;
 	}
+	
+	/* (non-Javadoc)
+	 * @see org.srg.scpp_im.game.Strategy#isSingleUnitDemand()
+	 */
 	public boolean isSingleUnitDemand()
 	{
 		return this.isSingleUnitDemand;
 	}
+	
+	/**
+	 * Check single demand.
+	 */
 	protected void checkSingleDemand()
 	{
 		int[] singleValue = new int[NUM_GOODS];

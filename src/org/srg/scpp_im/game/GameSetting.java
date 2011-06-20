@@ -4,6 +4,7 @@ package org.srg.scpp_im.game;
 
 /**
  * GameSetting class provides required parameters for SPSB games.
+ * @author Dong Youn Yoon
  */
 public class GameSetting {
 	
