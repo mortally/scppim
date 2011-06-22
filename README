@@ -1,0 +1,25 @@
+-- Instruction for running the simulator of self-confirming price 
+	prediction in interdependent auctions.
+	
+1. After you have done 'git clone' the current package from the remote
+repository -- manx@manx.eecs.umich.edu:~/repos/scpp_sim.git , You need
+to include the package as a new Java project in Eclipse. Once the
+package is added as a new project, Eclipse will automatically compile
+and place binaries into ./bin directory
+
+2. After the compilation, You can invoke scpp_run.sh from where it is 
+located to train a price prediction vector for a particular strategy 
+or run a simulation:
+
+For training: ./scpp_run.sh <simul_path> training 
+					[<strategy_to_train number_of_agents>]
+For production: ./scpp_run.sh <simul_path> production 
+					<number_of_samples>
+
+<simul_path> is where 'simulation_spec.yaml' is located, which 
+contains necessary parameters that specify a game.
+
+3. The payoff data from simulations will be printed out in the file
+'payoff_data' in <simul_path>. The trained price prediction vector
+will be placed automatically into pp_data directory. 
+ 
