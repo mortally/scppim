@@ -9,50 +9,47 @@ import java.util.BitSet;
 import java.util.Random;
 
 /**
- * The 
+ * The base class for distribution price prediction
  */
 public class SelfConfirmingDistributionPricePrediction extends GameSetting implements Serializable, Strategy {
 
 	/** The Constant serialVersionUID. */
 	private static final long serialVersionUID = 100L;
 	
-	/** The Constant BETA. */
-	protected static final int BETA = 50;
-	
-	/** The index. */
+	/** The index of an agent. */
 	protected int index;
 	
-	/** The job length. */
+	/** The required job length. */
 	protected int jobLength;
 	
-	/** The NU m_ sample. */
+	/** The number of samples a strategy generates to determine a bid. */
 	protected int NUM_SAMPLE;
 	
-	/** The NU m_ scenario. */
+	/** The number of scenarios a strategy generates to compare candidate bids. */
 	protected int NUM_SCENARIO;
 	
-	/** The NU m_ candidat e_ bid. */
+	/** The number of candidate bids. */
 	protected int NUM_CANDIDATE_BID;
 	
-	/** The is single unit demand. */
+	/** Whether an agent has a single-unit demand. */
 	protected boolean isSingleUnitDemand;
 	
-	/** The is price predicting. */
+	/** Whether an agent has a price prediction vector. */
 	protected boolean isPricePredicting = false;
 	
-	/** The type dist. */
+	/** The type/value distribution. */
 	protected Map<BitSet, Integer> typeDist;
 	
-	/** The price prediction. */
+	/** The price prediction vector. */
 	protected double[][] pricePrediction;
 	
-	/** The prev prediction. */
+	/** The price prediction vector from the previous iterations. */
 	protected double[][] prevPrediction;
 	
-	/** The price observation. */
+	/** The observations of prices. */
 	protected double[][] priceObservation;
 	
-	/** The cumul prediction. */
+	/** The CDF of price prediction. */
 	protected double[][] cumulPrediction;
 	
 	/** The utility record. */
@@ -67,16 +64,16 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 	/** The cumulated value. */
 	protected double cumulatedValue = 0.0;
 	
-	/** The bit vector. */
+	/** The bit vector representing set of goods. */
 	protected BitSet[] bitVector;
 	
-	/** The prediction_type. */
+	/** The prediction type. */
 	protected int prediction_type = DISTRIBUTION;
 	
 	/**
-	 * Instantiates a new self confirming distribution price prediction.
+	 * Instantiates a new agent with a distribution price prediction strategy
 	 *
-	 * @param index the index
+	 * @param index the index of an agent
 	 */
 	public SelfConfirmingDistributionPricePrediction(int index)
 	{
@@ -92,7 +89,7 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		cumulPrediction = new double[NUM_GOODS][VALUE_UPPER_BOUND+1];
 		for (int i=0;i<NUM_GOODS;i++)
 		{
-			for (int j=0;j<BETA+1;j++)
+			for (int j=0;j<VALUE_UPPER_BOUND+1;j++)
 			{
 				prevPrediction[i][j] = 0;
 				pricePrediction[i][j] = 0.1;
@@ -122,7 +119,7 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 			Random r = new Random();
 			for (int i=0;i<NUM_GOODS;i++)
 			{
-				for (int j=0;j<BETA+1;j++)
+				for (int j=0;j<VALUE_UPPER_BOUND+1;j++)
 				{
 					pricePrediction[i][j] = r.nextDouble();
 					cumulPrediction[i][j] = j == 0 ? pricePrediction[i][j] : cumulPrediction[i][j-1] + pricePrediction[i][j];
@@ -287,7 +284,7 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 	{
 		for (int i=0;i<NUM_GOODS;i++)
 		{
-			for (int j=0;j<BETA+1;j++)
+			for (int j=0;j<VALUE_UPPER_BOUND+1;j++)
 			{
 				System.out.print(pricePrediction[i][j] + " ");
 			}
@@ -302,7 +299,7 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 	public void setNewPrediction()
 	{
 		//pricePrediction = priceObservation;
-		//priceObservation = new int[NUM_GOODS][BETA+1];
+		//priceObservation = new int[NUM_GOODS][VALUE_UPPER_BOUND+1];
 		for (int i=0;i<NUM_GOODS;i++)
 		{
 			for (int j=0;j<VALUE_UPPER_BOUND+1;j++)
@@ -372,7 +369,7 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 	}
 	
 	/**
-	 * Builds the cumulative dist.
+	 * Builds the cumulative prediction distribution.
 	 */
 	private void buildCumulativeDist()
 	{
@@ -438,7 +435,7 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 		{
 			double sumPrev = 0;
 			double sumCurrent = 0;
-			for (int j=0;j<BETA+1;j++)
+			for (int j=0;j<VALUE_UPPER_BOUND+1;j++)
 			{
 				sumCurrent += ((double)pDist[i][j]/(double)NUM_SIMULATION);
 				sumPrev += ((double)pricePrediction[i][j]/(double)NUM_SIMULATION);
@@ -453,10 +450,10 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 	}
 	
 	/**
-	 * Adds the value.
+	 * Adds the value of the goods that an agent obtained.
 	 *
-	 * @param s the s
-	 * @return the double
+	 * @param s the final state of an auction
+	 * @return the value of the goods
 	 */
 	private double addValue(InformationState s)
 	{
@@ -627,7 +624,7 @@ public class SelfConfirmingDistributionPricePrediction extends GameSetting imple
 	}
 	
 	/**
-	 * Check single demand.
+	 * Check if an agent has a single-unit demand.
 	 */
 	protected void checkSingleDemand()
 	{
